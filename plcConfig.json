@@ -1,0 +1,5 @@
+{
+  "plcs": [
+    {"ip": "192.168.1.10", "port": 9999, "nameMachine":"LB1" , "typeMachine":"ASSEMBLY"}
+  ]
+}

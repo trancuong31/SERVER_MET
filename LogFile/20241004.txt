@@ -1,0 +1,11 @@
+Lỗi kiem tra bang tai 6 mã E10026 và 22 kết thúc tại 2024-10-04 08:05:55. Thời gian lỗi: 7.0 giây
+Lỗi kiem tra bang tai 5 mã E10025 và 21 kết thúc tại 2024-10-04 08:05:57. Thời gian lỗi: 11.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-04 08:05:59. Thời gian lỗi: 16.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-04 08:06:01. Thời gian lỗi: 20.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-04 08:12:19. Thời gian lỗi: 29.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-04 09:09:24. Thời gian lỗi: 12.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-04 09:09:42. Thời gian lỗi: 3.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-04 09:09:48. Thời gian lỗi: 2.0 giây
+Lỗi kiem tra bang tai 5 mã E10025 và 21 kết thúc tại 2024-10-04 09:20:24. Thời gian lỗi: 3.0 giây
+Lỗi kiem tra bang tai 6 mã E10026 và 22 kết thúc tại 2024-10-04 09:21:16. Thời gian lỗi: 42.0 giây
+Time lỗi: 13.0s

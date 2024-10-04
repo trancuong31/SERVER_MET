@@ -1,0 +1,60 @@
+Loi ket noi PLC,	1
+Loi ket noi socket,	2
+Alarm truc 1,	3
+Alarm truc 2,	4
+Alarm truc 3,	5
+Alarm truc 4,	6
+Alarm truc 5,	7
+Alarm truc 6,	8
+Alarm servo,	9
+Dang an nut STOP,	10
+Loi scan 1,	87
+Loi scan 2,	88
+Loi scan 3,	89
+Loi scan 4,	90
+Loi scan 5,	91
+Loi link 1,	92
+Loi link 2,	93
+Loi link 3,	94
+Loi link 4,	95
+Loi link 5,	96
+Loi vi 1,	97
+Loi vi 2,	98
+Loi vi 3,	99
+Loi vi 4,	100
+Loi vi 5,	101
+Loi check 1,	102
+Loi check 2,	103
+Loi check 3,	104
+Loi check 4,	105
+Loi check 5,	106
+Loi hut label,	107
+Loi hut oc,	128
+Loi ban vit 1,	129
+Loi ban vit 2,	130
+Loi ban vit 3,	131
+Loi ban vit 4,	132
+Loi ban vit 5,	133
+Loi ban vit 6,	134
+Loi ban vit 7,	135
+Loi ban vit 8,	136
+Loi ban vit 9,	137
+Loi ban vit 10,	138
+Loi ROBOT controller,	187
+Cua mo,			188
+Cua phu mo,		189
+Cua khoang 1 mo,	190
+Cua khoang 2 mo,	191
+Cua khoang 3 mo,	192
+Cua khoang 4 mo,	193
+Cua khoang 5 mo,	194
+Cua khoang 6 mo,	195
+Cua khoang 7 mo,	196
+Cua khoang 8 mo,	197
+Cua khoang 9 mo,	198
+Cua khoang 10 mo,	199
+Cua fail mo,	200
+Loi lay ban tay 1,	203
+Loi tha ban tay 1,	204
+Loi lay ban tay 2,	205
+Loi tha ban tay 2,	206
