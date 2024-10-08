@@ -21,7 +21,7 @@ class connectDB:
 
     # Tạo đối tượng lock để đảm bảo an toàn luồng
     lock_DB = threading.Lock()
-
+ 
     # Hàm truy vấn dữ liệu
     def select(connection, query, parameters=None):
         cursor = connection.cursor()
@@ -84,6 +84,7 @@ class connectDB:
         except Exception as e:
             print(f"Lỗi: {e}")
             return False
+    
     def insert_error_time(self, factory, line, machine_code, errorTime):
         work_date = datetime.datetime.now().strftime("%d-%m-%Y %H") 
         query = ""
@@ -454,4 +455,166 @@ class connectDB:
             print(f"ngoại lệ: {str(e)}")
             
         return False
+
+    def update_status(self, factory, line, machine_code, current_state):
+        work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
+        query = ""
+        try:
+            with connectDB.lock_DB:
+                query = f"SELECT * FROM CNT_MACHINE_INFO WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND BUILDING='{factory}' AND LINE_NAME='{line}'"
+                data = connectDB.select(self.connection, query)
+
+                if data and len(data) > 0:
+                    for row in data:
+                        state = row[23] 
+                        if state is None or state == "" or state is not None:
+                            query = f"UPDATE CNT_MACHINE_INFO SET CURRENT_STATE = '{current_state}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND BUILDING='{factory}' AND LINE_NAME='{line}'"
+                else:
+                    query = f"INSERT INTO CNT_MACHINE_INFO (MACHINE_NO, BUILDING, LINE_NAME, CURRENT_STATE) VALUES ('{factory}_{line}_{machine_code}', '{factory}', '{line}', '{current_state}')"
+                
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+
+        except Exception as e:
+            print(f"ngoại lệ: {str(e)}")
+        return False
+    
+    def update_oracle_machine_status(self, factory, line, machine_code, status):
+        query = ""
+        try:
+            with connectDB.lock_DB:
+                query = f"SELECT * FROM AUTOMATION_STATUS WHERE FACTORY='{factory}' AND MACHINE_CODE='{machine_code}' AND LINE='{line}'"
+                data = connectDB.select(self.connection, query)
+                if data and len(data) > 0:
+                    for row in data:
+                        state = row[3] 
+                        if state is None or state == "" or state is not None:
+                            query = f"UPDATE AUTOMATION_STATUS SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{machine_code}' AND LINE='{line}'"
+                else:
+                    # Nếu không có dữ liệu, thực hiện INSERT
+                    query = f"INSERT INTO AUTOMATION_STATUS (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{machine_code}', '{line}', '{status}')"
+                
+                # Thực thi câu lệnh SQL
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+        except Exception as e:
+            print(f"ngoại lệ: {str(e)}")
+            return False
+    
+    def machine_status_update_oracle(self, factory, line, machine_code, status):
+        query = ""
+        try:
+            with connectDB.lock_DB:
+                query = f"SELECT * FROM STATUS_AUTOMATION WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
+                data = connectDB.select(self.connection, query)
+                if data and len(data) > 0:
+                    query = f"UPDATE STATUS_AUTOMATION SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
+                else:
+                    query = f"INSERT INTO STATUS_AUTOMATION (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{factory}_{line}_{machine_code}', '{line}', '{status}')"
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+        except Exception as e:
+            print(f"ngoại lệ: {str(e)}")
+            return False
+
+    def insert_production(self, factory, line, machine_code, status, date_time):
+        query = ""
+        try:
+            with connectDB.lock_DB:
+                query = f"INSERT INTO STATUS_AUTOMATION (FACTORY,LINE,MACHINE_CODE, STATUS, DATE_TIME) VALUES ('{factory}', '{factory}_{line}_{machine_code}', '{line}', '{status}', '{date_time}')"
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+        except Exception as e:
+            print(f"ngoại lệ: {str(e)}")
+            return False
+    
+    def insert_error_timeon(self, factory, line, machine_code, status, error_code, error_name, time_error, owner):
+        with connectDB.lock_DB:
+            try:
+                query = (f"INSERT INTO AUTOMATION_DATA_DETAIL (FACTORY, LINE, MACHINE_CODE, STATUS, ERROR_CODE, ERROR_NAME, TIME_ERROR, OWNER) "
+                    f"VALUES ('{factory}', '{line}', '{factory}_{line}_{machine_code}', '{status}', '{error_code}', '{error_name}', "
+                    f"TO_DATE('{time_error}', 'yyyy/MM/dd HH24:mi:ss'), '{owner}')")
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+            except Exception as e:
+                print(f"ngoại lệ: {str(e)}")
+                return False
+
+    def update_error_on(self, factory, line, machine_code, error_code, time_fixed):
+        with connectDB.lock_DB:
+            try:
+                query = (f"UPDATE AUTOMATION_DATA_DETAIL "
+                        f"SET TIME_FIXED = TO_DATE('{time_fixed}', 'yyyy/MM/dd HH24:mi:ss'), STATUS = 'OK' "
+                        f"WHERE ERROR_CODE = '{error_code}' AND FACTORY = '{factory}' AND LINE = '{line}' "
+                        f"AND MACHINE_CODE = '{factory}_{line}_{machine_code}' AND TIME_FIXED IS NULL")
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+            except Exception as e:
+                print(f"ngoại lệ: {str(e)}")
+                return False
+
+    def cnt_insert_error_timeon(self, factory, line, machine_code, project_name, section_name, error_id, error_code, time_error):
+        with connectDB.lock_DB:
+            try:
+                query = (f"INSERT INTO CNT_MACHINE_ERROR_RECORD (MACHINE_NO, PROJECT_NAME, SECTION_NAME, ERROR_ID, ERROR_CODE, START_TIME) "
+                    f"VALUES ('{factory}_{line}_{machine_code}', '{project_name}', '{section_name}', {error_id}, '{error_code}', "
+                    f"TO_DATE('{time_error}', 'yyyy/MM/dd HH24:mi:ss'))")
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+            except Exception as e:
+                print(f"ngoại lệ: {str(e)}")
+                return False
+            
+    def cnt_update_error_on(self, factory, line, machine_code, error_code, time_fixed):
+        with connectDB.lock_DB:
+            try:
+                query = (f"UPDATE CNT_MACHINE_ERROR_RECORD "
+                        f"SET END_TIME = TO_DATE('{time_fixed}', 'yyyy/MM/dd HH24:mi:ss') "
+                        f"WHERE MACHINE_NO = '{factory}_{line}_{machine_code}' "
+                        f"AND ERROR_CODE = '{error_code}' AND END_TIME IS NULL")
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+            except Exception as e:
+                print(f"ngoại lệ: {str(e)}")
+                return False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

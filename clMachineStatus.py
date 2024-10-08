@@ -2,7 +2,7 @@ class MachineStatus:
     def __init__(self, clMachine=None, clNameMachine=None, clStatus=None, clIpaddr=None, ipPort=None, Cltime=None,
                  clGreen=None, clYellow=None, clRed=None, clError=None, clIDLE=None, clStartIDLE=None, clStartRunTime= None,
                  last_normal_time=None, clStartStopTime=None,  clStartErrorTime={},  last_error_time=None, listError=None,
-                 clflag=False, clConnect=None, hasPrintedError=False, clStartStopTime1 = None):
+                 clflag=False, clConnect=None, hasPrintedError=False, clStartStopTime1 = None, typeMachine = None):
         self.clMachine = clMachine
         self.clNameMachine = clNameMachine
         self.clStatus = clStatus
@@ -25,4 +25,5 @@ class MachineStatus:
         self.hasPrintedError = hasPrintedError
         self.clStartStopTime1 = clStartStopTime1
         self.ListError = listError if listError is not None else []
+        self.typeMachine = typeMachine
         

@@ -1,0 +1,7 @@
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-05 08:12:17. Thời gian lỗi: 4.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-05 08:12:22. Thời gian lỗi: 4.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-05 08:12:30. Thời gian lỗi: 7.0 giây
+Time Error của máy LB1 : 4.0s
+Time Error của máy LB1 : 5.0s
+Time Error của máy LB1 : 27.0s
+Error thu thập dữ liệu: [WinError 10065] A socket operation was attempted to an unreachable host
