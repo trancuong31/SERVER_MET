@@ -417,8 +417,13 @@ class MainLogic(QObject):
     def handle_cycle_time(self, plc, current_time, word_cycle_time,pymc3e):
         try:
             if word_cycle_time[0] != 0  and self.previous_cycle_time ==0:
+<<<<<<< HEAD
                 print(f'Cycle time máy {plc.clNameMachine} là {word_cycle_time[0]} lúc {current_time}')
                 self.conn.insert_cycle_time(self.Config['factory'],self.Config['line'], plc.clNameMachine, word_cycle_time[0], current_time)
+=======
+                print(f'Cycle time máy {self.plc.clNameMachine} là {word_cycle_time[0]} lúc {current_time}')
+                self.conn.insert_cycle_time(self.Config['factory'],self.Config['line'], self.plc.clNameMachine, word_cycle_time[0], current_time)
+>>>>>>> cdc462f9707779ce7d2a51aac15bed0aa0a3b520
                 #Reset cycle time = 0
                 pymc3e.batchwrite_wordunits(headdevice="D1", values=[0])
             self.previous_cycle_time = word_cycle_time[0]
