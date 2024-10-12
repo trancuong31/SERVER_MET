@@ -1,0 +1,153 @@
+Error thu thập dữ liệu: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Error thu thập dữ liệu: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi Alarm truc 3 mã E10009 và 5 kết thúc tại 2024-10-10 17:04:13. Thời gian lỗi: 7.0 giây
+Lỗi Alarm truc 2 mã E10008 và 4 kết thúc tại 2024-10-10 17:04:15. Thời gian lỗi: 11.0 giây
+Lỗi Alarm truc 1 mã E10007 và 3 kết thúc tại 2024-10-10 17:04:17. Thời gian lỗi: 15.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-10 17:04:19. Thời gian lỗi: 31.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-10 17:04:21. Thời gian lỗi: 36.0 giây
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-10 18:33:02. Thời gian lỗi: 3.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-10 18:33:34. Thời gian lỗi: 1.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-10 18:33:55. Thời gian lỗi: 14.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-10 18:34:14. Thời gian lỗi: 3.0 giây
+Time Error của máy LB1 : 8.0s
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi Alarm truc 2 mã E10008 và 4 kết thúc tại 2024-10-10 19:03:23. Thời gian lỗi: 2.0 giây
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: 'MainLogic' object has no attribute 'connect'
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: 'MainLogic' object has no attribute 'connect'
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: 'MainLogic' object has no attribute 'connect'
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: 'MainLogic' object has no attribute 'connect'
+Error thu thập dữ liệu: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối PLC: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: timed out
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Error thu thập dữ liệu: timed out
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Error thu thập dữ liệu: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: timed out

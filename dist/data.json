@@ -1,0 +1,13 @@
+{
+    "ipServer": "192.168.2.110",
+    "dbName": "Sever MET",
+    "timeUpdate": "17/09/2024",
+    "factory": "A02",
+    "line": "22",
+    "projectName": "SERVER",
+    "owner": "CUONG",
+    "chamberMonitor": "12",
+    "chamberMonitorQUA": "22",
+    "totalMachine": "10",
+    "UPH": "3500"
+}

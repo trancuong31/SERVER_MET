@@ -30,3 +30,7 @@ Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-08 10:23:07.
 Lỗi kiem tra bang tai 4 mã E10024 và 20 kết thúc tại 2024-10-08 10:23:10. Thời gian lỗi: 17.0 giây
 Time Error của máy LB1 : 2.0s
 Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-08 10:38:37. Thời gian lỗi: 1.0 giây
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-08 10:58:49. Thời gian lỗi: 3.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-08 10:58:54. Thời gian lỗi: 3.0 giây
+Time Error của máy LB1 : 3.0s
+Time Error của máy LB1 : 7.0s

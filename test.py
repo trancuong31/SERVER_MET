@@ -12,3 +12,4 @@ try:
     print(data['ipServer'])
 except FileNotFoundError:
     data = {}  # If file doesn't exist, create an empty dictionary
+#  {"ip": "192.168.1.25", "port": 9914, "nameMachine":"LB2" , "typeMachine":"ASSEMBLY"}

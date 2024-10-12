@@ -1,0 +1,6 @@
+Error thu thập dữ liệu: [WinError 10054] An existing connection was forcibly closed by the remote host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host
+Lỗi kết nối PLC: [WinError 10065] A socket operation was attempted to an unreachable host

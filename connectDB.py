@@ -1,27 +1,27 @@
 import oracledb
 import datetime
 import threading
-
 # Kết nối với cơ sở dữ liệu
 class connectDB:
+    # Tạo đối tượng lock để đảm bảo an toàn luồng
+    lock_DB = threading.Lock()
     def __init__(self):
         self.connection = self.create_connection()
     def create_connection(self):
         try:
+            # oracledb.init_oracle_client(lib_dir=r"C:\Users\MET\Downloads\instantclient-basic-windows.x64-23.5.0.24.07 (1)\instantclient_23_5")
+            oracledb.init_oracle_client()  # Kiểm tra nếu có Oracle Client sẵn
+            print("Oracle Instant Client is available.")
             connection = oracledb.connect(
                 user="system",               # Tên đăng nhập Oracle
                 password="123456",           # Mật khẩu
                 dsn="localhost:1521/orcl"    # Thông tin kết nối
             )
-            print('Kết nối thành công')
+            print('Kết nối thành công SERVER !!')
             return connection
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi kết nối tới cơ sở dữ liệu: {e}")
             return None
-
-    # Tạo đối tượng lock để đảm bảo an toàn luồng
-    lock_DB = threading.Lock()
- 
     # Hàm truy vấn dữ liệu
     def select(connection, query, parameters=None):
         cursor = connection.cursor()
@@ -38,7 +38,6 @@ class connectDB:
             return None
         finally:
             cursor.close()
-
     # Hàm thực thi câu lệnh SQL (INSERT, UPDATE, DELETE)
     def execute_query(connection, query, parameters=None):
         cursor = connection.cursor()
@@ -236,7 +235,7 @@ class connectDB:
                 
                 if data and len(data) > 0:
                     for row in data:
-                        pick_qty1 = row[11]
+                        pick_qty1 = row[9]
                         if pick_qty1 == None or pick_qty1 == "":
                             query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY1 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
                         else:
@@ -261,7 +260,7 @@ class connectDB:
                 
                 if data and len(data) > 0:
                     for row in data:
-                        pick_qty2 = row[12] 
+                        pick_qty2 = row[10] 
                         if pick_qty2 == None or pick_qty2 == "":
                             query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY2 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
                         else:
@@ -338,7 +337,7 @@ class connectDB:
                 
                 if data and len(data) > 0:
                     for row in data:
-                        throw_qty3 = row[9]  
+                        throw_qty3 = row[11]  
                         if throw_qty3 == None or throw_qty3 == "":
                             query = f"UPDATE CNT_MACHINE_SUMMARY SET THROW_QTY3 = '1', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
                         else:
@@ -390,7 +389,7 @@ class connectDB:
                 
                 if data and len(data) > 0:
                     for row in data:
-                        throw_qty4 = row[10]  
+                        throw_qty4 = row[12]  
                         if throw_qty4 is None or throw_qty4 == "":
                             query = f"UPDATE CNT_MACHINE_SUMMARY SET THROW_QTY4 = '1', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
                         else:
@@ -406,13 +405,11 @@ class connectDB:
         
         return False
 
-    def insert_cycle_time(self, factory, line, machine_code, cycle_time):
-        work_date = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+    def insert_cycle_time(self, factory, line, machine_code, cycle_time, date_time):
         query = ""
-        
         try:
             with connectDB.lock_DB:  # Sử dụng lock để đảm bảo an toàn luồng
-                query = f"INSERT INTO CYCLE_TIME_MACHINE (FACTORY, LINE, MACHINE_CODE, CYCLE, DATE_TIME) VALUES ('{factory}', '{line}', '{machine_code}', '{cycle_time}', TO_DATE('{work_date}', 'yyyy/MM/dd HH24:MI:SS'))"
+                query = f"INSERT INTO CYCLE_TIME_MACHINE (FACTORY, LINE, MACHINE_CODE, CYCLE, DATE_TIME) VALUES ('{factory}', '{line}', '{machine_code}', '{cycle_time}', TO_DATE('{date_time}', 'yyyy/MM/dd HH24:MI:SS'))"
                 
                 try:
                     connectDB.execute_query(self.connection, query)
@@ -508,13 +505,17 @@ class connectDB:
             return False
     
     def machine_status_update_oracle(self, factory, line, machine_code, status):
-        query = ""
+        query = ""      
         try:
             with connectDB.lock_DB:
-                query = f"SELECT * FROM STATUS_AUTOMATION WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
+                query =f"SELECT * FROM STATUS_AUTOMATION WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
                 data = connectDB.select(self.connection, query)
+
                 if data and len(data) > 0:
-                    query = f"UPDATE STATUS_AUTOMATION SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
+                    for row in data:
+                        status = row[3] 
+                        if status is None or status == "" or status is not None:
+                            query = f"UPDATE STATUS_AUTOMATION SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
                 else:
                     query = f"INSERT INTO STATUS_AUTOMATION (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{factory}_{line}_{machine_code}', '{line}', '{status}')"
                 try:
@@ -525,7 +526,7 @@ class connectDB:
         except Exception as e:
             print(f"ngoại lệ: {str(e)}")
             return False
-
+    
     def insert_production(self, factory, line, machine_code, status, date_time):
         query = ""
         try:
@@ -602,6 +603,20 @@ class connectDB:
                 print(f"ngoại lệ: {str(e)}")
                 return False
 
+    def insert_error_code_info(self, factory, line, machine_code, project_name, section_name, error_id, error_code):
+        sql = ""
+        try:
+            with connectDB.lock_DB:
+                query = f"INSERT INTO CNT_MACHINE_ERRORCODE_INFO (MACHINE_NO, PROJECT_NAME, SECTION_NAME, ERROR_ID, ERROR_CODE) " \
+                    f"VALUES ('{factory}_{line}_{machine_code}', '{project_name}', '{section_name}', {error_id}, '{error_code}')"   
+                try:
+                    connectDB.execute_query(self.connection, query)
+                    return True
+                except Exception as ex:
+                    print(f"Error executing query: {str(ex)}")
+        except Exception as e:
+            print(f"ngoại lệ: {str(e)}")
+            return False
 
 
 

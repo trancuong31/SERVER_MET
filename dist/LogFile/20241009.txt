@@ -1,0 +1,4 @@
+Lỗi Loi ket noi PLC mã E10005 và 1 kết thúc tại 2024-10-09 13:25:28. Thời gian lỗi: 17.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-09 13:28:48. Thời gian lỗi: 1.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-09 16:21:59. Thời gian lỗi: 1.0 giây
+Lỗi Loi ket noi socket mã E10006 và 2 kết thúc tại 2024-10-09 16:22:04. Thời gian lỗi: 3.0 giây
