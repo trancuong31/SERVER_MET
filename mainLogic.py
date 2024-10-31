@@ -263,7 +263,7 @@ class MainLogic(QObject):
                     if output == 1 and self.previous_output[plc.clNameMachine][0] == 0:
                         self.pass_count[0] += 1
                         self.conn.insert_production_pass(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        # self.conn.insert_production(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
+                        self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
                         print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 1 tại {currentTime}, đẩy lên DB thành công!')
                         plc.clConnect += 1
                     self.previous_output[plc.clNameMachine][0] = output
@@ -272,7 +272,7 @@ class MainLogic(QObject):
                     if output == 1 and self.previous_output_fail[plc.clNameMachine][1] == 0:
                         self.fail_count[1] += 1
                         self.conn.insert_production_fail(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        # self.conn.insert_production(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'FAIL', currentTime)
+                        self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'FAIL', currentTime)
                         print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} fail làn 1 tại {currentTime}, đẩy lên DB thành công!')
                     self.previous_output_fail[plc.clNameMachine][1] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5212", values=[0])
@@ -280,7 +280,7 @@ class MainLogic(QObject):
                     if output == 1 and self.previous_output[plc.clNameMachine][2]== 0:
                         self.pass_count[2] += 1
                         self.conn.insert_production_pass(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        # self.conn.insert_production(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
+                        self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
                         print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 2 tại {currentTime}, đẩy lên DB thành công!')
                         plc.clConnect += 1
                     self.previous_output[plc.clNameMachine][2] = output
@@ -289,7 +289,7 @@ class MainLogic(QObject):
                     if output == 1 and self.previous_output_fail[plc.clNameMachine][3] == 0:
                         self.fail_count[3] += 1
                         self.conn.insert_production_fail(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        # self.conn.insert_production(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'FAIL', currentTime)
+                        self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'FAIL', currentTime)
                         print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} fail làn 2 tại {currentTime}, đẩy lên DB thành công!')
                     self.previous_output_fail[plc.clNameMachine][3] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5214", values=[0])
@@ -375,7 +375,7 @@ class MainLogic(QObject):
     # Xử lý cycle time
     def handle_cycle_time(self, plc, current_time, word_cycle_time,pymc3e):
         try:
-            if word_cycle_time[0] != 0  and self.previous_cycle_time ==0:
+            if word_cycle_time[0] != 0  and self.previous_cycle_time == 0:
                 print(f'Cycle time máy {plc.clNameMachine} là {word_cycle_time[0]} lúc {current_time}')
                 self.conn.insert_cycle_time(self.Config['factory'],self.Config['line'], plc.clNameMachine, word_cycle_time[0], current_time)
                 #Reset cycle time = 0
@@ -384,21 +384,25 @@ class MainLogic(QObject):
         except Exception as ex:
             print(f'Error handle cycle time: {ex}')
     # Xử lý kết nối lại PLC
-    def retry_connect_plc(self, plc):
-        try:
-            ipPLC = plc["ip"]
-            ipPort = plc["port"]
-            typeMachine = plc["typeMachine"]
-            nameMachine = plc["nameMachine"]
-            pymc3e = pymcprotocol.Type3E()
-            pymc3e.connect(ipPLC, ipPort)
-            test_read = pymc3e.batchread_bitunits(headdevice="L5000", readsize=1)
-            if test_read is not None and len(test_read) > 0:
-                print(f'Kiểm tra đọc thành công từ PLC {nameMachine}')
-                return pymc3e 
-        except Exception as ex:
-            print(f'Không thể kết nối lại với PLC {nameMachine}')
-            return None
+    def retry_connect_plc(self, plc, retry_count=3):
+        attempts = 0
+        while attempts < retry_count:
+            try:
+                ipPLC = plc["ip"]
+                ipPort = plc["port"]
+                nameMachine = plc["nameMachine"]
+                pymc3e = pymcprotocol.Type3E()
+                pymc3e.connect(ipPLC, ipPort)
+                test_read = pymc3e.batchread_bitunits(headdevice="L5000", readsize=1)
+                if test_read is not None and len(test_read) > 0:
+                    print(f'Kết nối lại thành công với PLC {nameMachine}')
+                    return pymc3e  # Kết nối lại thành công
+            except Exception as ex:
+                attempts += 1
+                print(f'Không thể kết nối lại với PLC {nameMachine}. Thử lại lần {attempts}/{retry_count}.')
+                time.sleep(3)  # Đợi 3 giây trước khi thử lại
+        print(f'Sau {retry_count} lần thử, không thể kết nối với PLC {nameMachine}. Dừng thử lại.')
+        return None
     #Xử lý dữ liệu của từng PLC
     def collect_data_from_plc(self,all_machines, plc, plc_connections, machines_status, Config):
         current_time = datetime.datetime.now().replace(microsecond=0)
@@ -408,38 +412,51 @@ class MainLogic(QObject):
             return
         try:
             pymc3e = plc_connections.get(nameMachine)
-            # machine_status.clConnect = 'Đang kết nối'
             if pymc3e is None:
-                return# Bỏ qua nếu không thể kết nối lại
-            # Đọc dữ liệu từ PLC
-            listErrors = self.read_errors_from_txt('errorName.txt')
-            listErrorStop = self.read_errors_from_txt('errorStopName.txt')
-            listErrorCode = self.read_errors_from_txt('errorCode.txt')
-            wordunits_errors = pymc3e.batchread_bitunits(headdevice="L5003", readsize=206)
-            word_bit_IDLE = pymc3e.batchread_bitunits(headdevice="L5210", readsize=1)
-            word_bit_output = pymc3e.batchread_bitunits(headdevice="L5211", readsize=4)
-            word_bit_pick_throw = pymc3e.batchread_bitunits(headdevice="L5215", readsize=8)
-            word_bit_light = pymc3e.batchread_bitunits(headdevice='L5000', readsize=3)
-            word_cycle_time = pymc3e.batchread_wordunits(headdevice="R5300", readsize=1)
-            # Xử lý dữ liệu
-            self.insert_time_default(machine_status, current_time)
-            self.handle_idle_state(machine_status, current_time, word_bit_IDLE, wordunits_errors)
-            self.handle_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
-            self.handle_error_state_combined(machine_status, current_time, listErrors, listErrorCode, wordunits_errors)
-            self.handle_stop_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
-            self.handle_run_state(machine_status, current_time, wordunits_errors, word_bit_light, word_bit_IDLE)
-            self.handle_Product_Output(machine_status, current_time, word_bit_output, pymc3e)
-            self.handl_pickup_throw(machine_status, current_time, word_bit_pick_throw, pymc3e)
-            # self.handle_cycle_time(machine_status, current_time, word_cycle_time, pymc3e)
-            machine_status.Cltime = str(current_time.strftime('%Y-%m-%d %H:%M:%S'))
+                pymc3e = self.retry_connect_plc(plc)
+                if pymc3e:
+                    plc_connections[nameMachine] = pymc3e
+                    machine_status.isConnected = True
+                else:
+                    print(f'Không thể kết nối với PLC {nameMachine}')
+                    return  # Dừng hàm nếu không kết nối được
+            elif pymc3e:
+                # machine_status.isConnected = True
+                listErrors = self.read_errors_from_txt('errorName.txt')
+                listErrorStop = self.read_errors_from_txt('errorStopName.txt')
+                listErrorCode = self.read_errors_from_txt('errorCode.txt')
+                wordunits_errors = pymc3e.batchread_bitunits(headdevice="L5003", readsize=206)
+                word_bit_IDLE = pymc3e.batchread_bitunits(headdevice="L5210", readsize=1)
+                word_bit_output = pymc3e.batchread_bitunits(headdevice="L5211", readsize=4)
+                word_bit_pick_throw = pymc3e.batchread_bitunits(headdevice="L5215", readsize=8)
+                word_bit_light = pymc3e.batchread_bitunits(headdevice='L5000', readsize=3)
+                word_cycle_time = pymc3e.batchread_wordunits(headdevice="R5300", readsize=1)
+                # Xử lý dữ liệu
+                pymc3e.batchwrite_wordunits(headdevice="L5301", values=[1])
+                self.insert_time_default(machine_status, current_time)
+                self.handle_idle_state(machine_status, current_time, word_bit_IDLE, wordunits_errors)
+                self.handle_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
+                self.handle_error_state_combined(machine_status, current_time, listErrors, listErrorCode, wordunits_errors)
+                self.handle_stop_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
+                self.handle_run_state(machine_status, current_time, wordunits_errors, word_bit_light, word_bit_IDLE)
+                self.handle_Product_Output(machine_status, current_time, word_bit_output, pymc3e)
+                self.handl_pickup_throw(machine_status, current_time, word_bit_pick_throw, pymc3e)
+                self.handle_cycle_time(machine_status, current_time, word_cycle_time, pymc3e)
+                pymc3e.batchwrite_wordunits(headdevice="L5301", values=[0])
+                machine_status.Cltime = str(current_time.strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as ex:
             print(f'Lỗi kết nối với PLC {nameMachine}: {ex}')
-             # Cập nhật trạng thái máy nếu không thể kết nối lại    
+            # machine_status.isConnected= False
+             # Cập nhật trạng thái máy nếu không thể kết nối lại
             self.conn.update_status(Config['factory'], Config['line'], machine_status.clNameMachine, Config['projectName'], machine_status.typeMachine, Config['UPH'], Config['ipServer'], Config['dbName'], '0')
             self.conn.update_oracle_machine_status(Config['factory'], Config['line'], machine_status.clNameMachine, 'PAUSE')
             if nameMachine in plc_connections:
                 del plc_connections[nameMachine]
                 print(f'Đã xóa kết nối của PLC {nameMachine}')
+            pymc3e = self.retry_connect_plc(plc)
+            if pymc3e:
+                plc_connections[nameMachine] = pymc3e
+                machine_status.isConnected = True
     #Khởi tạo kết nối list PLC
     def initialize_connections(self, plc_connections):
         for plc in self.plcList:
@@ -462,20 +479,7 @@ class MainLogic(QObject):
                     # machine_status.clConnect = 'Đang kết nối'
             except Exception as ex:
                 print(f'Lỗi kết nối PLC {ipPLC}:{ipPort} {ex}')
-                del plc_connections[nameMachine]
-    def heart_beat (self, plc_connections, head_device = 'L5300' ):
-        try:
-            while True:
-                for nameMachine, pymc3e in plc_connections.items():
-                    try:
-                        pymc3e.batchwrite_bitunits(headdevice=head_device, values =[1])
-                        # print(f"Heartbeat cho {nameMachine}: PLC hoạt động bình thường.")
-                    except Exception as ex:
-                        print(f'Không thể gửi heartbeat tới PLC {nameMachine}: {ex}')
-                time.sleep(5)
-        except Exception as ex:
-            print(f'không thể gửi heartBeat tới plc: {ex}')
-    
+                
     def retry_connect_plc_thread(self, plc, plc_connections):
         nameMachine = plc["nameMachine"]
         try:
@@ -493,22 +497,12 @@ class MainLogic(QObject):
         plc_connections = {}
         self.initialize_connections(plc_connections)
         all_machines = [self.machines_status[plc["nameMachine"]] for plc in self.plcList if plc["nameMachine"] in self.machines_status]
-        # Tạo luồng cho hàm heartbeat
-        heartbeat_thread = threading.Thread(target=self.heart_beat, args=(plc_connections,))
-        heartbeat_thread.start()
         while True:
-            threads = []
             for plc in self.plcList:
                 nameMachine = plc["nameMachine"]
-                if nameMachine not in plc_connections:
-                    thread = threading.Thread(target=self.retry_connect_plc_thread, args=(plc, plc_connections))
-                    thread.start()
-                elif nameMachine in plc_connections:
-                    thread = threading.Thread(target=self.collect_data_from_plc, args=(all_machines, plc, plc_connections, self.machines_status, self.Config))
-                    thread.start()
-                    threads.append(thread)
-            # for thread in threads:
-            #     thread.join()
+                if nameMachine in plc_connections:
+                    # Nếu PLC có kết nối, tiến hành thu thập dữ liệu
+                    threading.Thread(target=self.collect_data_from_plc, args=(all_machines, plc, plc_connections, self.machines_status, self.Config)).start()
             if all_machines:
                 self.update_signal.emit(all_machines)
             time.sleep(0.3)
