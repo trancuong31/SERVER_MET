@@ -26,8 +26,11 @@ class MainLogic(QObject):
         self.pass_pickup_count = {0: 0, 2: 0,4: 0, 6: 0}
         self.fail_throw_count = {1: 0, 3: 0,5: 0,7: 0}
         self.flag = False
+        
+        self.buffers = {}
         self.conn = connectDB()
         self.previous_cycle_time = 0
+        self.start_buffer_flush_thread()
         with open('data.json', 'r') as file:
             self.Config = json.load(file)
         with open('plcConfig.json', 'r') as file:
@@ -36,26 +39,72 @@ class MainLogic(QObject):
             self.machines_status[plc["nameMachine"]] = MachineStatus()
             self.machines_status[plc["nameMachine"]].clStartErrorTime = {}
     lock = threading.Lock()
+
+    def start_buffer_flush_thread(self):
+        threading.Thread(target=self.flush_buffer_periodically, daemon=True).start()
+
+    def flush_buffer_periodically(self):
+        while True:
+            with self.lock:
+                for nameMachine, buffer in self.buffers.items():
+                    if buffer:  # Kiểm tra xem có dữ liệu trong bộ đệm không
+                        try:
+                            self.conn.insert_machine_data(buffer, self.Config['UPH'])
+                            self.buffers[nameMachine].clear()  # Xóa bộ đệm sau khi đã gửi
+                        except Exception as e:
+                            print(f"Error updating CNT_MACHINE_SUMMARY database for {nameMachine}: {e}")
+            time.sleep(60)
+    
+    def update_buffer_list(self, nameMachine, factory, line, machine_code, data_type, value, current_time):
+        work_hour = current_time.strftime("%H")
+        key = f"{factory}_{line}_{machine_code}_{work_hour}"
+        if nameMachine not in self.buffers:
+            self.buffers[nameMachine] = {}
+        with self.lock:
+            if key not in self.buffers[nameMachine]:
+                self.buffers[nameMachine][key] = {
+                    "run_time": 0,
+                    "error_time": 0,
+                    "stop_time": 0,
+                    "standby_time": 0,
+                    "output": 0,
+                    "THROW_QTY1": 0,
+                    "THROW_QTY2": 0,
+                    "PICK_QTY1" : 0,
+                    "PICK_QTY2" : 0,
+                    "THROW_QTY3": 0,
+                    "THROW_QTY4": 0,
+                    "PICK_QTY3" : 0,
+                    "PICK_QTY4" : 0,
+                    "NG_QTY" : 0,
+                    "uph": 0
+                }
+            self.buffers[nameMachine][key][data_type] += value
+    # Lấy trạng thái mãy định kì mỗi giờ
     def insert_time_default(self, plc, current_time):
         minutes = current_time.minute
         seconds = current_time.second
-        # Chỉ kiểm tra trong khoảng thời gian từ 59 phút 45 đến 55 giây
-        if minutes == 59 and 50 <= seconds <= 59:
-            if not plc.flag:  # Kiểm tra nếu chưa cập nhật trong khoảng thời gian này
+        # Chỉ kiểm tra trong khoảng thời gian từ 59 phút 50 đến 59 giây
+        if minutes == 59 and 50 <= seconds <= 55:
+            if not plc.flag:
                 if plc.clStartIDLE is not None:
                     idle_time = (current_time - plc.clStartIDLE).total_seconds()
                     if idle_time > 1:
                         print(f"Thời gian {current_time} máy {plc.clNameMachine} IDLE lúc 59:59s : {idle_time:.0f}s")
-                        self.conn.insert_standby_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, idle_time)
                         Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} IDLE lúc 59:59s : {idle_time:.0f}s')
+                        self.update_buffer_list(plc.clNameMachine,self.Config['factory'],self.Config['line'],plc.clNameMachine,"standby_time",idle_time,current_time)
+                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                        self.buffers[plc.clNameMachine].clear()
                         plc.clStartIDLE = None
 
                 if plc.clStartStopTime1 is not None:
                     timeerror = (current_time - plc.clStartStopTime1).total_seconds()
                     if timeerror > 1:
                         print(f"Thời gian {current_time} máy {plc.clNameMachine} ERROR lúc 59:59s : {timeerror:.0f}s")
-                        self.conn.insert_error_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, timeerror)
                         Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} ERROR lúc 59:59s : {timeerror:.0f}s')
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"error_time",timeerror,current_time)
+                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                        self.buffers[plc.clNameMachine].clear()
                         plc.clStartStopTime1 = None
 
                 if plc.clStartStopTime is not None:
@@ -63,15 +112,19 @@ class MainLogic(QObject):
                     if time_stop > 1:
                         print(f"Thời gian {current_time} máy {plc.clNameMachine} STOP lúc 59:59s : {time_stop:.0f}s")
                         self.conn.insert_stop_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, time_stop)
-                        Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} STOP lúc 59:59s : {time_stop:.0f}s')
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"stop_time",time_stop,current_time)
+                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                        self.buffers[plc.clNameMachine].clear()
                         plc.clStartStopTime = None
 
                 if plc.clStartRunTime is not None:
                     time_run = (current_time - plc.clStartRunTime).total_seconds()
                     if time_run > 1:
                         print(f"Thời gian {current_time} máy {plc.clNameMachine} RUN lúc 59:59s : {time_run:.0f}s")
-                        self.conn.insert_on_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, time_run)
                         Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} RUN lúc 59:59s : {time_run:.0f}s')
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"run_time",time_run,current_time)
+                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                        self.buffers[plc.clNameMachine].clear()
                         plc.clStartRunTime = None
                 plc.flag = True
         else:
@@ -97,7 +150,7 @@ class MainLogic(QObject):
                 if plc.clStartIDLE is not None:
                     idle_time = (current_time - plc.clStartIDLE).total_seconds()
                     print(f"Thời gian {current_time} máy {plc.clNameMachine} IDLE: {idle_time:.0f}s")
-                    self.conn.insert_standby_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, idle_time)
+                    self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "standby_time", idle_time, current_time)
                     plc.clStartIDLE = None
                 else:
                     plc.clIDLE = '0'
@@ -127,7 +180,7 @@ class MainLogic(QObject):
                     print(f"Thời gian {current_time} máy {plc.clNameMachine} Error: {timeerror:.0f}s")
                     plc.clStartStopTime1 = None
                     plc.clStatus = 'NORMAL'
-                    self.conn.insert_error_time(self.Config['factory'],self.Config['line'], plc.clNameMachine, timeerror)
+                    self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "error_time", timeerror, current_time)
                 else:
                     plc.clStatus = 'NORMAL'
         except Exception as ex:
@@ -168,8 +221,8 @@ class MainLogic(QObject):
                     time_stop = (current_time - plc.clStartStopTime).total_seconds()
                     print(f"Thời gian {current_time} máy {plc.clNameMachine} Stop : {time_stop:.0f}s")
                     plc.clStartStopTime = None
-                    self.conn.insert_stop_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, time_stop)
-                    Config.writeLog(f'Time Error của máy {plc.clNameMachine} : {time_stop}s')
+                    # self.conn.insert_stop_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, time_stop)
+                    self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "stop_time", time_stop, current_time)
                 
         except Exception as ex:
             print(f'Error handle stop error state: {ex}')
@@ -245,7 +298,8 @@ class MainLogic(QObject):
                     print(f"Máy {plc.clNameMachine} hết chạy, tổng thời gian chạy: {timeRun:.0f}s")
                     plc.clStartRunTime = None
                     plc.hasPrintedError = False
-                    self.conn.insert_on_time(self.Config['factory'],self.Config['line'], plc.clNameMachine, timeRun)
+                    # Thêm bản ghi vào bộ đệm
+                    self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "run_time", timeRun, current_time)
                 else:
                     plc.hasPrintedError = False
         except Exception as ex:
@@ -262,35 +316,39 @@ class MainLogic(QObject):
                 if i == 0:
                     if output == 1 and self.previous_output[plc.clNameMachine][0] == 0:
                         self.pass_count[0] += 1
-                        self.conn.insert_production_pass(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        # self.conn.insert_production_pass(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "output", 5, currentTime)
                         self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 1 tại {currentTime}, đẩy lên DB thành công!')
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 1 tại {currentTime}')
                         plc.clConnect += 1
                     self.previous_output[plc.clNameMachine][0] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5211", values=[0])
                 if i == 1:
                     if output == 1 and self.previous_output_fail[plc.clNameMachine][1] == 0:
                         self.fail_count[1] += 1
-                        self.conn.insert_production_fail(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        # self.conn.insert_production_fail(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "NG_QTY", 1, currentTime)
                         self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'FAIL', currentTime)
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} fail làn 1 tại {currentTime}, đẩy lên DB thành công!')
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} fail làn 1 tại {currentTime}')
                     self.previous_output_fail[plc.clNameMachine][1] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5212", values=[0])
                 if i == 2:
                     if output == 1 and self.previous_output[plc.clNameMachine][2]== 0:
                         self.pass_count[2] += 1
-                        self.conn.insert_production_pass(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        # self.conn.insert_production_pass(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "output", 5, currentTime)
                         self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 2 tại {currentTime}, đẩy lên DB thành công!')
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 2 tại {currentTime}')
                         plc.clConnect += 1
                     self.previous_output[plc.clNameMachine][2] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5213", values=[0])
                 if i == 3:
                     if output == 1 and self.previous_output_fail[plc.clNameMachine][3] == 0:
                         self.fail_count[3] += 1
-                        self.conn.insert_production_fail(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        # self.conn.insert_production_fail(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "NG_QTY", 1, currentTime)
                         self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'FAIL', currentTime)
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} fail làn 2 tại {currentTime}, đẩy lên DB thành công!')
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} fail làn 2 tại {currentTime}')
                     self.previous_output_fail[plc.clNameMachine][3] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5214", values=[0])
         except Exception as ex:
@@ -306,57 +364,65 @@ class MainLogic(QObject):
                 if i == 0:
                     if pick == 1 and self.previous_pickup[plc.clNameMachine][0] == 0:
                         self.pass_pickup_count[0] += 1
-                        self.conn.insert_pickup_qty1(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 1 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_pickup_qty1(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "PICK_QTY1", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 1 tại {currentTime}')
                     self.previous_pickup[plc.clNameMachine][0] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5215", values=[0])
                 if i == 1:
                     if pick == 1 and self.previous_throw[plc.clNameMachine][1] == 0:
                         self.fail_throw_count[1] += 1
-                        self.conn.insert_throw_qty1(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 1 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_throw_qty1(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "THROW_QTY1", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 1 tại {currentTime}')
                     self.previous_throw[plc.clNameMachine][1] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5216", values=[0])
                 if i == 2:
                     if pick == 1 and self.previous_pickup[plc.clNameMachine][2] == 0:
                         self.pass_pickup_count[2] += 1
-                        self.conn.insert_pickup_qty2(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 2 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_pickup_qty2(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "PICK_QTY2", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 2 tại {currentTime}')
                     self.previous_pickup[plc.clNameMachine][2] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5217", values=[0])
                 if i == 3:
                     if pick == 1 and self.previous_throw[plc.clNameMachine][3] == 0:
                         self.fail_throw_count[3] += 1
-                        self.conn.insert_throw_qty2(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 2 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_throw_qty2(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "THROW_QTY2", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 2 tại {currentTime}')
                     self.previous_throw[plc.clNameMachine][3] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5218", values=[0])
                 if i == 4:
                     if pick == 1 and self.previous_pickup[plc.clNameMachine][4] == 0:
                         self.pass_pickup_count[4] += 1
-                        self.conn.insert_pickup_qty3(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 3 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_pickup_qty3(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "PICK_QTY3", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 3 tại {currentTime}')
                     self.previous_pickup[plc.clNameMachine][4] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5219", values=[0])
                 if i == 5:
                     if pick == 1 and self.previous_throw[plc.clNameMachine][5] == 0:
                         self.fail_throw_count[5] += 1
-                        self.conn.insert_throw_qty3(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 3 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_throw_qty3(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "THROW_QTY3", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 3 tại {currentTime}')
                     self.previous_throw[plc.clNameMachine][5] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5220", values=[0])
                 if i == 6:
                     if pick == 1 and self.previous_pickup[plc.clNameMachine][6] == 0:
                         self.pass_pickup_count[6] += 1
-                        self.conn.insert_pickup_qty4(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 4 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_pickup_qty4(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "PICK_QTY4", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Pickup 4 tại {currentTime}')
                     self.previous_pickup[plc.clNameMachine][6] = pick
                     pymc3e.batchwrite_bitunits(headdevice="L5221", values=[0])
                 if i == 7:
                     if pick == 1 and self.previous_throw[plc.clNameMachine][7] == 0:
                         self.fail_throw_count[7] += 1
-                        self.conn.insert_throw_qty4(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
-                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 4 tại {currentTime}, đẩy lên DB thành công!')
+                        # self.conn.insert_throw_qty4(self.Config['factory'],self.Config['line'], plc.clNameMachine, self.Config['UPH'])
+                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "THROW_QTY4", 10, currentTime)
+                        print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} Throw 4 tại {currentTime}')
                     self.previous_throw[plc.clNameMachine][7] = pick  
                     pymc3e.batchwrite_bitunits(headdevice="L5222", values=[0]) 
         except Exception as ex:
@@ -384,7 +450,7 @@ class MainLogic(QObject):
         except Exception as ex:
             print(f'Error handle cycle time: {ex}')
     # Xử lý kết nối lại PLC
-    def retry_connect_plc(self, plc, retry_count=3):
+    def retry_connect_plc(self, plc, retry_count=5):
         attempts = 0
         while attempts < retry_count:
             try:
@@ -393,70 +459,57 @@ class MainLogic(QObject):
                 nameMachine = plc["nameMachine"]
                 pymc3e = pymcprotocol.Type3E()
                 pymc3e.connect(ipPLC, ipPort)
-                test_read = pymc3e.batchread_bitunits(headdevice="L5000", readsize=1)
-                if test_read is not None and len(test_read) > 0:
-                    print(f'Kết nối lại thành công với PLC {nameMachine}')
-                    return pymc3e  # Kết nối lại thành công
+                print(f'Kết nối lại thành công với PLC {nameMachine}')
+                return pymc3e  # Kết nối lại thành công
             except Exception as ex:
                 attempts += 1
-                print(f'Không thể kết nối lại với PLC {nameMachine}. Thử lại lần {attempts}/{retry_count}.')
-                time.sleep(3)  # Đợi 3 giây trước khi thử lại
+                time.sleep(5) 
+                print(f'Không thể kết nối lại với PLC {nameMachine}: {ex}. Thử lại lần {attempts}/{retry_count}.')
         print(f'Sau {retry_count} lần thử, không thể kết nối với PLC {nameMachine}. Dừng thử lại.')
         return None
     #Xử lý dữ liệu của từng PLC
-    def collect_data_from_plc(self,all_machines, plc, plc_connections, machines_status, Config):
+    def collect_data_from_plc(self,all_machines, plc, plc_connections, machines_status, Config1):
         current_time = datetime.datetime.now().replace(microsecond=0)
         nameMachine = plc["nameMachine"]
         machine_status = machines_status.get(nameMachine)
         if machine_status is None:
             return
-        try:
-            pymc3e = plc_connections.get(nameMachine)
-            if pymc3e is None:
-                pymc3e = self.retry_connect_plc(plc)
+        while True:
+            try:
+                pymc3e = plc_connections.get(nameMachine)
                 if pymc3e:
                     plc_connections[nameMachine] = pymc3e
                     machine_status.isConnected = True
-                else:
-                    print(f'Không thể kết nối với PLC {nameMachine}')
-                    return  # Dừng hàm nếu không kết nối được
-            elif pymc3e:
-                # machine_status.isConnected = True
-                listErrors = self.read_errors_from_txt('errorName.txt')
-                listErrorStop = self.read_errors_from_txt('errorStopName.txt')
-                listErrorCode = self.read_errors_from_txt('errorCode.txt')
-                wordunits_errors = pymc3e.batchread_bitunits(headdevice="L5003", readsize=206)
-                word_bit_IDLE = pymc3e.batchread_bitunits(headdevice="L5210", readsize=1)
-                word_bit_output = pymc3e.batchread_bitunits(headdevice="L5211", readsize=4)
-                word_bit_pick_throw = pymc3e.batchread_bitunits(headdevice="L5215", readsize=8)
-                word_bit_light = pymc3e.batchread_bitunits(headdevice='L5000', readsize=3)
-                word_cycle_time = pymc3e.batchread_wordunits(headdevice="R5300", readsize=1)
-                # Xử lý dữ liệu
-                pymc3e.batchwrite_wordunits(headdevice="L5301", values=[1])
-                self.insert_time_default(machine_status, current_time)
-                self.handle_idle_state(machine_status, current_time, word_bit_IDLE, wordunits_errors)
-                self.handle_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
-                self.handle_error_state_combined(machine_status, current_time, listErrors, listErrorCode, wordunits_errors)
-                self.handle_stop_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
-                self.handle_run_state(machine_status, current_time, wordunits_errors, word_bit_light, word_bit_IDLE)
-                self.handle_Product_Output(machine_status, current_time, word_bit_output, pymc3e)
-                self.handl_pickup_throw(machine_status, current_time, word_bit_pick_throw, pymc3e)
-                self.handle_cycle_time(machine_status, current_time, word_cycle_time, pymc3e)
-                pymc3e.batchwrite_wordunits(headdevice="L5301", values=[0])
-                machine_status.Cltime = str(current_time.strftime('%Y-%m-%d %H:%M:%S'))
-        except Exception as ex:
-            print(f'Lỗi kết nối với PLC {nameMachine}: {ex}')
-            # machine_status.isConnected= False
-             # Cập nhật trạng thái máy nếu không thể kết nối lại
-            self.conn.update_status(Config['factory'], Config['line'], machine_status.clNameMachine, Config['projectName'], machine_status.typeMachine, Config['UPH'], Config['ipServer'], Config['dbName'], '0')
-            self.conn.update_oracle_machine_status(Config['factory'], Config['line'], machine_status.clNameMachine, 'PAUSE')
-            if nameMachine in plc_connections:
-                del plc_connections[nameMachine]
-                print(f'Đã xóa kết nối của PLC {nameMachine}')
-            pymc3e = self.retry_connect_plc(plc)
-            if pymc3e:
-                plc_connections[nameMachine] = pymc3e
-                machine_status.isConnected = True
+                    listErrors = self.read_errors_from_txt('errorName.txt')
+                    listErrorStop = self.read_errors_from_txt('errorStopName.txt')
+                    listErrorCode = self.read_errors_from_txt('errorCode.txt')
+                    wordunits_errors = pymc3e.batchread_bitunits(headdevice="L5003", readsize=206)
+                    word_bit_IDLE = pymc3e.batchread_bitunits(headdevice="L5210", readsize=1)
+                    word_bit_output = pymc3e.batchread_bitunits(headdevice="L5211", readsize=4)
+                    word_bit_pick_throw = pymc3e.batchread_bitunits(headdevice="L5215", readsize=8)
+                    word_bit_light = pymc3e.batchread_bitunits(headdevice='L5000', readsize=3)
+                    word_cycle_time = pymc3e.batchread_wordunits(headdevice="R5300", readsize=1)
+                    # Xử lý dữ liệu
+                    # pymc3e.batchwrite_wordunits(headdevice="L5301", values=[1])
+                    self.insert_time_default(machine_status, current_time)
+                    self.handle_idle_state(machine_status, current_time, word_bit_IDLE, wordunits_errors)
+                    self.handle_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
+                    self.handle_error_state_combined(machine_status, current_time, listErrors, listErrorCode, wordunits_errors)
+                    self.handle_stop_error(machine_status, current_time, word_bit_light, wordunits_errors, word_bit_IDLE)
+                    self.handle_run_state(machine_status, current_time, wordunits_errors, word_bit_light, word_bit_IDLE)
+                    self.handle_Product_Output(machine_status, current_time, word_bit_output, pymc3e)
+                    self.handl_pickup_throw(machine_status, current_time, word_bit_pick_throw, pymc3e)
+                    self.handle_cycle_time(machine_status, current_time, word_cycle_time, pymc3e)
+                    # pymc3e.batchwrite_wordunits(headdevice="L5301", values=[0])
+                    machine_status.Cltime = str(current_time.strftime('%Y-%m-%d %H:%M:%S'))
+            except Exception as ex:
+                    time.sleep(5)
+                    print(f'Lỗi kết nối với PLC {nameMachine}: {ex}      {current_time}')
+                    Config.writeLog(f'Lỗi kết nối với PLC {nameMachine}: {ex}      {current_time}')
+                    self.conn.update_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, Config1['projectName'], machine_status.typeMachine, Config1['UPH'], Config1['ipServer'], Config1['dbName'], '0')
+                    self.conn.update_oracle_machine_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, 'PAUSE')
+                    break
+            time.sleep(0.3)
     #Khởi tạo kết nối list PLC
     def initialize_connections(self, plc_connections):
         for plc in self.plcList:
@@ -476,36 +529,31 @@ class MainLogic(QObject):
                     machine_status.ipPort = ipPort
                     machine_status.clNameMachine = nameMachine
                     machine_status.typeMachine = typeMachine
-                    # machine_status.clConnect = 'Đang kết nối'
             except Exception as ex:
-                print(f'Lỗi kết nối PLC {ipPLC}:{ipPort} {ex}')
-                
-    def retry_connect_plc_thread(self, plc, plc_connections):
-        nameMachine = plc["nameMachine"]
-        try:
-            new_connection = self.retry_connect_plc(plc)
-            if new_connection is not None:
-                plc_connections[nameMachine] = new_connection
-                print(f'Kết nối lại thành công với PLC {nameMachine}')
-            else:
-                print(f'Không thể kết nối với PLC {nameMachine}, sẽ thử lại sau.')
-        except Exception as ex:
-            print(f'Không thể kết nối lại với PLC {nameMachine}: {ex}')
-    
+                print(f'Lỗi khởi tạo kết nối PLC {ipPLC}:{ipPort} {ex}')   
     #Luồng xử lý all PLC
     def threadPLC(self):
         plc_connections = {}
         self.initialize_connections(plc_connections)
         all_machines = [self.machines_status[plc["nameMachine"]] for plc in self.plcList if plc["nameMachine"] in self.machines_status]
+
+        # Tạo và chạy các luồng một lần
+        for plc in self.plcList:
+            nameMachine = plc["nameMachine"]
+            if nameMachine in plc_connections:
+                # Tạo luồng cho mỗi PLC và cho nó chạy mãi mãi
+                threading.Thread(target=self.collect_data_from_plc, args=(all_machines, plc, plc_connections, self.machines_status, self.Config), daemon=True).start()
+
+        # Cập nhật GUI một cách định kỳ
         while True:
-            for plc in self.plcList:
-                nameMachine = plc["nameMachine"]
-                if nameMachine in plc_connections:
-                    # Nếu PLC có kết nối, tiến hành thu thập dữ liệu
-                    threading.Thread(target=self.collect_data_from_plc, args=(all_machines, plc, plc_connections, self.machines_status, self.Config)).start()
             if all_machines:
                 self.update_signal.emit(all_machines)
-            time.sleep(0.3)
+            time.sleep(0.3)  # Nghỉ một chút trước khi cập nhật lại GUI
+
+
+
+
+
 # class WorkerThread(QThread):
 #     def __init__(self, logic):
 #         super().__init__()
