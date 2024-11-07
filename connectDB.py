@@ -13,12 +13,12 @@ class connectDB:
             oracledb.init_oracle_client()  # Kiểm tra nếu có Oracle Client sẵn
             print("Oracle Instant Client is available.")
             connection = oracledb.connect(
-                # user="pthnew",               
-                # password="pthnew",           
-                # dsn="10.228.114.170:3333/meorcl" 
-                user="system",
-                password="123456",           
-                dsn="localhost:1521/orcl3"  
+                user="pthnew",               
+                password="pthnew",           
+                dsn="10.228.114.170:3333/meorcl" 
+                # user="system",
+                # password="123456",           
+                # dsn="localhost:1521/orcl3"  
             )
             print('Kết nối thành công SERVER !!')
             return connection
@@ -50,7 +50,7 @@ class connectDB:
             else:
                 cursor.execute(query)
             self.dem += 1
-            print(f'Số lần truy cập DB: {self.dem}')
+            # print(f'Số lần truy cập DB: {self.dem}')
             connection.commit()  # Xác nhận thay đổi
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi thực thi truy vấn: {e}")
