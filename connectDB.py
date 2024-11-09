@@ -13,12 +13,12 @@ class connectDB:
             oracledb.init_oracle_client()  # Kiểm tra nếu có Oracle Client sẵn
             print("Oracle Instant Client is available.")
             connection = oracledb.connect(
-                user="pthnew",               
-                password="pthnew",           
-                dsn="10.228.114.170:3333/meorcl" 
-                # user="system",
-                # password="123456",           
-                # dsn="localhost:1521/orcl3"  
+                # user="pthnew",               
+                # password="pthnew",           
+                # dsn="10.228.114.170:3333/meorcl" 
+                user="system",
+                password="123456",           
+                dsn="localhost:1521/orcl3"  
             )
             print('Kết nối thành công SERVER !!')
             return connection
@@ -58,75 +58,128 @@ class connectDB:
         finally:
             cursor.close()
  
+    # def insert_machine_data(self, buffer, uph):
+    #     work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")  # Định dạng thời gian
+    #     try:
+    #         batch_queries = []
+    #         with connectDB.lock_DB:
+    #             for key, values in buffer.items():
+    #                 factory, line, machine_code, hour = key.split('_')
+    #                 machine_no = f"{factory}_{line}_{machine_code}"
+    #                 # Truy vấn kiểm tra bản ghi hiện có
+    #                 query = f"SELECT * FROM CNT_MACHINE_SUMMARY1 WHERE MACHINE_NO='{machine_no}' AND TO_CHAR(WORK_DATE, 'YYYY-MM-DD HH24') LIKE '%{work_date}%'"
+    #                 data = self.select(self.connection, query)
+
+    #                 if data and len(data) > 0:
+    #                     for row in data:
+    #                         # Cập nhật thời gian và các số liệu khác
+    #                         total_run_time = (row[2] if row[2] is not None else 0) + values['run_time']
+    #                         total_IDLE_time = (row[3] if row[3] is not None else 0) + values['standby_time']
+    #                         total_error_time = (row[4] if row[4] is not None else 0) + values['error_time']
+    #                         total_stop_time = (row[5] if row[5] is not None else 0) + values['stop_time']
+    #                         total_output = (row[6] if row[6] is not None else 0) + values['output']
+    #                         total_throw_qty1 = (row[7] if row[7] is not None else 0) + values['THROW_QTY1']
+    #                         total_throw_qty2 = (row[8] if row[8] is not None else 0) + values['THROW_QTY2']
+    #                         total_pick_qty1 = (row[9] if row[9] is not None else 0) + values['PICK_QTY1']
+    #                         total_pick_qty2 = (row[10] if row[10] is not None else 0) + values['PICK_QTY2']
+    #                         total_throw_qty3 = (row[11] if row[11] is not None else 0) + values['THROW_QTY3']
+    #                         total_throw_qty4 = (row[12] if row[12] is not None else 0) + values['THROW_QTY4']
+    #                         total_pick_qty3 = (row[13] if row[13] is not None else 0) + values['PICK_QTY3']
+    #                         total_pick_qty4 = (row[14] if row[14] is not None else 0) + values['PICK_QTY4']
+    #                         total_ng_qty = (row[15] if row[15] is not None else 0) + values['NG_QTY']
+                            
+    #                         update_query = f"""
+    #                         UPDATE CNT_MACHINE_SUMMARY1
+    #                         SET RUN_TIME = {total_run_time}, ERROR_TIME = {total_error_time}, STANDBY_TIME = {total_IDLE_time}, STOP_TIME = {total_stop_time},
+    #                             OUTPUT = {total_output}, THROW_QTY1 = {total_throw_qty1}, THROW_QTY2 = {total_throw_qty2}, PICK_QTY1 = {total_pick_qty1},
+    #                             PICK_QTY2 = {total_pick_qty2}, THROW_QTY3 = {total_throw_qty3}, THROW_QTY4 = {total_throw_qty4}, PICK_QTY3 = {total_pick_qty3},
+    #                             PICK_QTY4 = {total_pick_qty4}, NG_QTY = {total_ng_qty}, UPH = {uph}
+    #                         WHERE MACHINE_NO='{machine_no}' AND TO_CHAR(WORK_DATE, 'YYYY-MM-DD HH24') LIKE '%{work_date}%'
+    #                         """
+    #                         batch_queries.append(update_query)
+    #                 else:
+    #                     insert_query = f"""
+    #                     INSERT INTO CNT_MACHINE_SUMMARY1 
+    #                     (MACHINE_NO, WORK_DATE, RUN_TIME, STANDBY_TIME, ERROR_TIME, STOP_TIME, OUTPUT, THROW_QTY1, THROW_QTY2, PICK_QTY1, PICK_QTY2,
+    #                     THROW_QTY3, THROW_QTY4, PICK_QTY3, PICK_QTY4, NG_QTY, UPH) 
+    #                     VALUES ('{machine_no}', TO_DATE('{work_date}', 'YYYY-MM-DD HH24'), {values['run_time']}, {values['standby_time']}, 
+    #                     {values['error_time']}, {values['stop_time']}, {values['output']}, {values['THROW_QTY1']}, {values['THROW_QTY2']}, 
+    #                     {values['PICK_QTY1']}, {values['PICK_QTY2']}, {values['THROW_QTY3']}, {values['THROW_QTY4']}, 
+    #                     {values['PICK_QTY3']}, {values['PICK_QTY4']}, {values['NG_QTY']}, {uph})
+    #                     """
+    #                     batch_queries.append(insert_query)
+    #             # self.execute_query(self.connection, "BEGIN TRANSACTION")
+    #             # Thực thi tất cả các câu lệnh trong batch
+    #             for query in batch_queries:
+    #                 self.execute_query(self.connection, query)
+
+    #             self.connection.commit()
+    #             print(f"Batch update thành công {machine_no} lên bảng CNT_MACHINE_SUMMARY1!!!")
+    #             return True
+    #     except Exception as e:
+    #         print(f"Lỗi: {e}")
+    #         return False
+
     def insert_machine_data(self, buffer, uph):
         work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")  # Định dạng thời gian
         try:
-            batch_queries = []  # Danh sách để lưu các câu lệnh SQL
+            batch_queries = []
             with connectDB.lock_DB:
                 for key, values in buffer.items():
                     factory, line, machine_code, hour = key.split('_')
                     machine_no = f"{factory}_{line}_{machine_code}"
-                    # Truy vấn kiểm tra bản ghi hiện có
-                    query = f"SELECT * FROM CNT_MACHINE_SUMMARY1 WHERE MACHINE_NO='{machine_no}' AND TO_CHAR(WORK_DATE, 'YYYY-MM-DD HH24') LIKE '%{work_date}%'"
-                    data = self.select(self.connection, query)
-
-                    if data and len(data) > 0:
-                        for row in data:
-                            # Cập nhật thời gian và các số liệu khác
-                            total_run_time = (row[2] if row[2] is not None else 0) + values['run_time']
-                            total_IDLE_time = (row[3] if row[3] is not None else 0) + values['standby_time']
-                            total_error_time = (row[4] if row[4] is not None else 0) + values['error_time']
-                            total_stop_time = (row[5] if row[5] is not None else 0) + values['stop_time']
-                            total_output = (row[6] if row[6] is not None else 0) + values['output']
-                            total_throw_qty1 = (row[7] if row[7] is not None else 0) + values['THROW_QTY1']
-                            total_throw_qty2 = (row[8] if row[8] is not None else 0) + values['THROW_QTY2']
-                            total_pick_qty1 = (row[9] if row[9] is not None else 0) + values['PICK_QTY1']
-                            total_pick_qty2 = (row[10] if row[10] is not None else 0) + values['PICK_QTY2']
-                            total_throw_qty3 = (row[11] if row[11] is not None else 0) + values['THROW_QTY3']
-                            total_throw_qty4 = (row[12] if row[12] is not None else 0) + values['THROW_QTY4']
-                            total_pick_qty3 = (row[13] if row[13] is not None else 0) + values['PICK_QTY3']
-                            total_pick_qty4 = (row[14] if row[14] is not None else 0) + values['PICK_QTY4']
-                            total_ng_qty = (row[15] if row[15] is not None else 0) + values['NG_QTY']
-                            
-                            update_query = f"""
-                            UPDATE CNT_MACHINE_SUMMARY1
-                            SET RUN_TIME = {total_run_time}, ERROR_TIME = {total_error_time}, STANDBY_TIME = {total_IDLE_time}, STOP_TIME = {total_stop_time},
-                                OUTPUT = {total_output}, THROW_QTY1 = {total_throw_qty1}, THROW_QTY2 = {total_throw_qty2}, PICK_QTY1 = {total_pick_qty1},
-                                PICK_QTY2 = {total_pick_qty2}, THROW_QTY3 = {total_throw_qty3}, THROW_QTY4 = {total_throw_qty4}, PICK_QTY3 = {total_pick_qty3},
-                                PICK_QTY4 = {total_pick_qty4}, NG_QTY = {total_ng_qty}, UPH = {uph}
-                            WHERE MACHINE_NO='{machine_no}' AND TO_CHAR(WORK_DATE, 'YYYY-MM-DD HH24') LIKE '%{work_date}%'
-                            """
-                            batch_queries.append(update_query)
-                    else:
-                        insert_query = f"""
-                        INSERT INTO CNT_MACHINE_SUMMARY1 
-                        (MACHINE_NO, WORK_DATE, RUN_TIME, STANDBY_TIME, ERROR_TIME, STOP_TIME, OUTPUT, THROW_QTY1, THROW_QTY2, PICK_QTY1, PICK_QTY2,
-                        THROW_QTY3, THROW_QTY4, PICK_QTY3, PICK_QTY4, NG_QTY, UPH) 
+                    
+                    # Câu lệnh MERGE để kiểm tra và chèn hoặc cập nhật bản ghi
+                    merge_query = f"""
+                    MERGE INTO CNT_MACHINE_SUMMARY1 target
+                    USING (SELECT '{machine_no}' AS MACHINE_NO, TO_DATE('{work_date}', 'YYYY-MM-DD HH24') AS WORK_DATE FROM dual) source
+                    ON (target.MACHINE_NO = source.MACHINE_NO AND target.WORK_DATE = source.WORK_DATE)
+                    WHEN MATCHED THEN
+                        UPDATE SET 
+                            RUN_TIME = NVL(target.RUN_TIME, 0) + {values['run_time']},
+                            ERROR_TIME = NVL(target.ERROR_TIME, 0) + {values['error_time']},
+                            STANDBY_TIME = NVL(target.STANDBY_TIME, 0) + {values['standby_time']},
+                            STOP_TIME = NVL(target.STOP_TIME, 0) + {values['stop_time']},
+                            OUTPUT = NVL(target.OUTPUT, 0) + {values['output']},
+                            THROW_QTY1 = NVL(target.THROW_QTY1, 0) + {values['THROW_QTY1']},
+                            THROW_QTY2 = NVL(target.THROW_QTY2, 0) + {values['THROW_QTY2']},
+                            PICK_QTY1 = NVL(target.PICK_QTY1, 0) + {values['PICK_QTY1']},
+                            PICK_QTY2 = NVL(target.PICK_QTY2, 0) + {values['PICK_QTY2']},
+                            THROW_QTY3 = NVL(target.THROW_QTY3, 0) + {values['THROW_QTY3']},
+                            THROW_QTY4 = NVL(target.THROW_QTY4, 0) + {values['THROW_QTY4']},
+                            PICK_QTY3 = NVL(target.PICK_QTY3, 0) + {values['PICK_QTY3']},
+                            PICK_QTY4 = NVL(target.PICK_QTY4, 0) + {values['PICK_QTY4']},
+                            NG_QTY = NVL(target.NG_QTY, 0) + {values['NG_QTY']},
+                            UPH = {uph}
+                    WHEN NOT MATCHED THEN
+                        INSERT (MACHINE_NO, WORK_DATE, RUN_TIME, STANDBY_TIME, ERROR_TIME, STOP_TIME, OUTPUT, THROW_QTY1, THROW_QTY2, 
+                                PICK_QTY1, PICK_QTY2, THROW_QTY3, THROW_QTY4, PICK_QTY3, PICK_QTY4, NG_QTY, UPH)
                         VALUES ('{machine_no}', TO_DATE('{work_date}', 'YYYY-MM-DD HH24'), {values['run_time']}, {values['standby_time']}, 
-                        {values['error_time']}, {values['stop_time']}, {values['output']}, {values['THROW_QTY1']}, {values['THROW_QTY2']}, 
-                        {values['PICK_QTY1']}, {values['PICK_QTY2']}, {values['THROW_QTY3']}, {values['THROW_QTY4']}, 
-                        {values['PICK_QTY3']}, {values['PICK_QTY4']}, {values['NG_QTY']}, {uph})
-                        """
-                        batch_queries.append(insert_query)
+                                {values['error_time']}, {values['stop_time']}, {values['output']}, {values['THROW_QTY1']}, {values['THROW_QTY2']}, 
+                                {values['PICK_QTY1']}, {values['PICK_QTY2']}, {values['THROW_QTY3']}, {values['THROW_QTY4']}, 
+                                {values['PICK_QTY3']}, {values['PICK_QTY4']}, {values['NG_QTY']}, {uph})
+                    """
+                    
+                    # Thêm MERGE query vào batch_queries
+                    batch_queries.append(merge_query)
 
                 # Thực thi tất cả các câu lệnh trong batch
                 for query in batch_queries:
                     self.execute_query(self.connection, query)
 
                 self.connection.commit()
-                print("Batch update thành công lên bảng CNT_MACHINE_SUMMARY1!!!")
+                print(f"Batch update thành công lên bảng CNT_MACHINE_SUMMARY1!")
                 return True
         except Exception as e:
             print(f"Lỗi: {e}")
             return False
-
 
     def insert_on_time(self, factory, line, machine_code, time_run):
         work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
         query = ""
         try:
             with connectDB.lock_DB:
-                query = f"SELECT * FROM CNT_MACHINE_SUMMARY1 WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
+                query = f"SELECT * FROM CNT_MACHINE_SUMMARY1 WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') = '%{work_date}%'"
                 data = self.select(self.connection, query)
 
                 if data and len(data) > 0:
