@@ -13,9 +13,9 @@ class connectDB:
             oracledb.init_oracle_client()  # Kiểm tra nếu có Oracle Client sẵn
             print("Oracle Instant Client is available.")
             connection = oracledb.connect(
-                # user="pthnew",               
-                # password="pthnew",           
-                # dsn="10.228.114.170:3333/meorcl" 
+                # user="pthnew",
+                # password="pthnew",
+                # dsn="10.228.114.170:3333/meorcl"
                 user="system",
                 password="123456",           
                 dsn="localhost:1521/orcl3"  
@@ -50,7 +50,7 @@ class connectDB:
             else:
                 cursor.execute(query)
             self.dem += 1
-            # print(f'Số lần truy cập DB: {self.dem}')
+            print(f'Số lần truy cập DB: {self.dem}')
             connection.commit()  # Xác nhận thay đổi
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi thực thi truy vấn: {e}")
@@ -573,80 +573,157 @@ class connectDB:
             
         return False
 
+    # def update_status(self, factory, line, machine_code, project_name, section_name, uph, db_ip, db_server_name, current_state):
+    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
+    #     query = ""
+    #     try:
+    #         with connectDB.lock_DB:
+    #             query = f"SELECT * FROM CNT_MACHINE_INFO1 WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND BUILDING='{factory}' AND LINE_NAME='{line}'"
+    #             data = self.select(self.connection, query)
+
+    #             if data and len(data) > 0:
+    #                 for row in data:
+    #                     state = row[23]
+    #                     if state is None or state == "" or state is not None:
+    #                         query = f"UPDATE CNT_MACHINE_INFO1 SET CURRENT_STATE = '{current_state}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND BUILDING='{factory}' AND LINE_NAME='{line}'"
+    #             else:
+    #                 query = f"INSERT INTO CNT_MACHINE_INFO1 (MACHINE_NO, BUILDING, PROJECT_NAME, SECTION_NAME, LINE_NAME, UPH, DB_IP, DB_SERVER_NAME, CURRENT_STATE) VALUES ('{factory}_{line}_{machine_code}', '{factory}','{project_name}','{section_name}','{line}' ,'{uph}','{db_ip}','{db_server_name}', '{current_state}')"
+                
+    #             try:
+    #                 self.execute_query(self.connection, query)
+    #                 return True
+    #             except Exception as ex:
+    #                 print(f"Error executing query: {str(ex)}")
+
+    #     except Exception as e:
+    #         print(f"ngoại lệ: {str(e)}")
+    #     return False
+    
     def update_status(self, factory, line, machine_code, project_name, section_name, uph, db_ip, db_server_name, current_state):
-        work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-        query = ""
+        machine_no = f"{factory}_{line}_{machine_code}"
+        
         try:
             with connectDB.lock_DB:
-                query = f"SELECT * FROM CNT_MACHINE_INFO1 WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND BUILDING='{factory}' AND LINE_NAME='{line}'"
-                data = self.select(self.connection, query)
-
-                if data and len(data) > 0:
-                    for row in data:
-                        state = row[23]
-                        if state is None or state == "" or state is not None:
-                            query = f"UPDATE CNT_MACHINE_INFO1 SET CURRENT_STATE = '{current_state}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND BUILDING='{factory}' AND LINE_NAME='{line}'"
-                else:
-                    query = f"INSERT INTO CNT_MACHINE_INFO1 (MACHINE_NO, BUILDING, PROJECT_NAME, SECTION_NAME, LINE_NAME, UPH, DB_IP, DB_SERVER_NAME, CURRENT_STATE) VALUES ('{factory}_{line}_{machine_code}', '{factory}','{project_name}','{section_name}','{line}' ,'{uph}','{db_ip}','{db_server_name}', '{current_state}')"
+                # Sử dụng MERGE để giảm số lượng câu truy vấn
+                query = f"""
+                    MERGE INTO CNT_MACHINE_INFO1 target
+                    USING (SELECT '{machine_no}' AS MACHINE_NO, '{factory}' AS BUILDING, '{line}' AS LINE_NAME FROM dual) source
+                    ON (target.MACHINE_NO = source.MACHINE_NO AND target.BUILDING = source.BUILDING AND target.LINE_NAME = source.LINE_NAME)
+                    
+                    WHEN MATCHED THEN
+                        UPDATE SET 
+                            CURRENT_STATE = '{current_state}'
+                    
+                    WHEN NOT MATCHED THEN
+                        INSERT (MACHINE_NO, BUILDING, PROJECT_NAME, SECTION_NAME, LINE_NAME, UPH, DB_IP, DB_SERVER_NAME, CURRENT_STATE)
+                        VALUES ('{machine_no}', '{factory}', '{project_name}', '{section_name}', '{line}', '{uph}', '{db_ip}', '{db_server_name}', '{current_state}')
+                """
                 
-                try:
-                    self.execute_query(self.connection, query)
-                    return True
-                except Exception as ex:
-                    print(f"Error executing query: {str(ex)}")
-
+                # Thực thi câu lệnh MERGE
+                self.execute_query(self.connection, query)
+                return True
         except Exception as e:
             print(f"ngoại lệ: {str(e)}")
         return False
+
+    # def update_oracle_machine_status(self, factory, line, machine_code, status):
+    #     query = ""
+    #     try:
+    #         with connectDB.lock_DB:
+    #             query = f"SELECT * FROM AUTOMATION_STATUS1 WHERE FACTORY='{factory}' AND MACHINE_CODE='{machine_code}' AND LINE='{line}'"
+    #             data = self.select(self.connection, query)
+    #             if data and len(data) > 0:
+    #                 for row in data:
+    #                     state = row[3] 
+    #                     if state is None or state == "" or state is not None:
+    #                         query = f"UPDATE AUTOMATION_STATUS1 SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{machine_code}' AND LINE='{line}'"
+    #             else:
+    #                 # Nếu không có dữ liệu, thực hiện INSERT
+    #                 query = f"INSERT INTO AUTOMATION_STATUS1 (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{machine_code}', '{line}', '{status}')"
+                
+    #             # Thực thi câu lệnh SQL
+    #             try:
+    #                 self.execute_query(self.connection, query)
+    #                 return True
+    #             except Exception as ex:
+    #                 print(f"Error executing query: {str(ex)}")
+    #     except Exception as e:
+    #         print(f"ngoại lệ: {str(e)}")
+    #         return False
     
     def update_oracle_machine_status(self, factory, line, machine_code, status):
-        query = ""
         try:
             with connectDB.lock_DB:
-                query = f"SELECT * FROM AUTOMATION_STATUS1 WHERE FACTORY='{factory}' AND MACHINE_CODE='{machine_code}' AND LINE='{line}'"
-                data = self.select(self.connection, query)
-                if data and len(data) > 0:
-                    for row in data:
-                        state = row[3] 
-                        if state is None or state == "" or state is not None:
-                            query = f"UPDATE AUTOMATION_STATUS1 SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{machine_code}' AND LINE='{line}'"
-                else:
-                    # Nếu không có dữ liệu, thực hiện INSERT
-                    query = f"INSERT INTO AUTOMATION_STATUS1 (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{machine_code}', '{line}', '{status}')"
+                # Sử dụng MERGE để kết hợp INSERT và UPDATE trong một câu lệnh
+                query = f"""
+                    MERGE INTO AUTOMATION_STATUS1 target
+                    USING (SELECT '{factory}' AS FACTORY, '{machine_code}' AS MACHINE_CODE, '{line}' AS LINE FROM dual) source
+                    ON (target.FACTORY = source.FACTORY AND target.MACHINE_CODE = source.MACHINE_CODE AND target.LINE = source.LINE)
+                    
+                    WHEN MATCHED THEN
+                        UPDATE SET 
+                            STATUS = '{status}'
+                    
+                    WHEN NOT MATCHED THEN
+                        INSERT (FACTORY, MACHINE_CODE, LINE, STATUS)
+                        VALUES ('{factory}', '{machine_code}', '{line}', '{status}')
+                """
                 
-                # Thực thi câu lệnh SQL
-                try:
-                    self.execute_query(self.connection, query)
-                    return True
-                except Exception as ex:
-                    print(f"Error executing query: {str(ex)}")
+                # Thực thi câu lệnh MERGE
+                self.execute_query(self.connection, query)
+                return True
         except Exception as e:
             print(f"ngoại lệ: {str(e)}")
-            return False
+        return False
+
+    # def machine_status_update_oracle(self, factory, line, machine_code, status):
+    #     query = ""      
+    #     try:
+    #         with connectDB.lock_DB:
+    #             query =f"SELECT * FROM STATUS_AUTOMATION1 WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
+    #             data = self.select(self.connection, query)
+
+    #             if data and len(data) > 0:
+    #                 for row in data:
+    #                     status = row[3] 
+    #                     if status is None or status == "" or status is not None:
+    #                         query = f"UPDATE STATUS_AUTOMATION1 SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
+    #             else:
+    #                 query = f"INSERT INTO STATUS_AUTOMATION1 (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{factory}_{line}_{machine_code}', '{line}', '{status}')"
+    #             try:
+    #                 self.execute_query(self.connection, query)
+    #                 return True
+    #             except Exception as ex:
+    #                 print(f"Error executing query: {str(ex)}")
+    #     except Exception as e:
+    #         print(f"ngoại lệ: {str(e)}")
+    #         return False
     
     def machine_status_update_oracle(self, factory, line, machine_code, status):
-        query = ""      
+        machine_code_full = f"{factory}_{line}_{machine_code}"
+        
         try:
             with connectDB.lock_DB:
-                query =f"SELECT * FROM STATUS_AUTOMATION1 WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
-                data = self.select(self.connection, query)
-
-                if data and len(data) > 0:
-                    for row in data:
-                        status = row[3] 
-                        if status is None or status == "" or status is not None:
-                            query = f"UPDATE STATUS_AUTOMATION1 SET STATUS='{status}' WHERE FACTORY='{factory}' AND MACHINE_CODE='{factory}_{line}_{machine_code}' AND LINE='{line}'"
-                else:
-                    query = f"INSERT INTO STATUS_AUTOMATION1 (FACTORY, MACHINE_CODE, LINE, STATUS) VALUES ('{factory}', '{factory}_{line}_{machine_code}', '{line}', '{status}')"
-                try:
-                    self.execute_query(self.connection, query)
-                    return True
-                except Exception as ex:
-                    print(f"Error executing query: {str(ex)}")
+                query = f"""
+                    MERGE INTO STATUS_AUTOMATION1 target
+                    USING (SELECT '{factory}' AS FACTORY, '{machine_code_full}' AS MACHINE_CODE, '{line}' AS LINE FROM dual) source
+                    ON (target.FACTORY = source.FACTORY AND target.MACHINE_CODE = source.MACHINE_CODE AND target.LINE = source.LINE)
+                    
+                    WHEN MATCHED THEN
+                        UPDATE SET 
+                            STATUS = '{status}'
+                    
+                    WHEN NOT MATCHED THEN
+                        INSERT (FACTORY, MACHINE_CODE, LINE, STATUS)
+                        VALUES ('{factory}', '{machine_code_full}', '{line}', '{status}');
+                """
+                
+                self.execute_query(self.connection, query)
+                return True
         except Exception as e:
             print(f"ngoại lệ: {str(e)}")
-            return False
-      
+        return False
+
     def insert_error_timeon(self, factory, line, machine_code, status, error_code, error_name, time_error, owner):
         with connectDB.lock_DB:
             try:
