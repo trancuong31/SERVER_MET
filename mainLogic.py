@@ -16,7 +16,6 @@ class MainLogic(QObject):
         super().__init__()
         self.plc = MachineStatus()
         self.machines_status = {}
-        self.hasPrintedError = False
         self.previous_cycle_time = {}
         self.previous_pickup = {}
         self.previous_throw = {}
@@ -78,21 +77,7 @@ class MainLogic(QObject):
             self.buffers[nameMachine][key][data_type] += value
             # Kiểm tra xem có trùng lặp không, nếu có thì xóa bản ghi trùng
             # self.remove_duplicate_records(nameMachine)
-    def remove_duplicate_records(self, nameMachine):
-            # Kiểm tra nếu nameMachine có trong self.buffers
-            if nameMachine in self.buffers:
-                seen_keys = set()  # Tập hợp để theo dõi các keys đã gặp
-                keys_to_delete = []  # Danh sách lưu các key cần xóa
 
-                for key in list(self.buffers[nameMachine].keys()):
-                    if key not in seen_keys:
-                        seen_keys.add(key)
-                    else:
-                        keys_to_delete.append(key)
-                for key in keys_to_delete:
-                    del self.buffers[nameMachine][key]
-
-                print(f"Đã xóa {len(keys_to_delete)} bản ghi trùng lặp cho {nameMachine}")
     # Lấy trạng thái mãy định kì mỗi giờ
     def insert_time_default(self, plc, current_time):
         minutes = current_time.minute
@@ -109,6 +94,7 @@ class MainLogic(QObject):
                         self.update_buffer_list(plc.clNameMachine,self.Config['factory'],self.Config['line'],plc.clNameMachine,"standby_time",idle_time,current_time)
                         self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
                         print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                        plc.clConnect= 0
                         self.buffers[plc.clNameMachine].clear()
                         plc.clStartIDLE = None
 
@@ -120,6 +106,7 @@ class MainLogic(QObject):
                         self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"error_time",timeerror,current_time)
                         self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
                         print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                        plc.clConnect= 0
                         self.buffers[plc.clNameMachine].clear()
                         plc.clStartStopTime1 = None
 
@@ -130,6 +117,7 @@ class MainLogic(QObject):
                         self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"stop_time",time_stop,current_time)
                         self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
                         print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                        plc.clConnect= 0
                         self.buffers[plc.clNameMachine].clear()
                         plc.clStartStopTime = None
 
@@ -141,6 +129,7 @@ class MainLogic(QObject):
                         self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"run_time",time_run,current_time)
                         self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
                         print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                        plc.clConnect= 0
                         self.buffers[plc.clNameMachine].clear()
                         plc.clStartRunTime = None
                 plc.flag = True
@@ -174,10 +163,10 @@ class MainLogic(QObject):
         except Exception as ex:
             print(f'Error handle idle state: {ex}')
     #Xử lý trạng thái Error nhưng máy vẫn chạy
-    def handle_error (self, plc, current_time, word_bit_light, wordunits_errors1 , word_bit_IDLE):
+    def handle_error (self, plc, current_time, word_bit_light, wordunits_errors1 , word_bit_IDLE):  
         try:
             has_error = any(value == 1 for value in wordunits_errors1)
-            if (word_bit_light[0] == 1 and word_bit_light[2] == 1 and word_bit_light[1] == 0 and word_bit_IDLE[0] == 0 ):
+            if (word_bit_light[0] == 1 and word_bit_light[2] == 1 and word_bit_light[1] == 0 and word_bit_IDLE[0] == 0 and has_error):
                 if plc.clStartStopTime1 is None:
                     plc.clGreen = '1'
                     plc.clYellow = '1'
@@ -191,7 +180,7 @@ class MainLogic(QObject):
                     plc.clGreen = '1'
                     plc.clYellow = '1'
                     plc.clStatus = 'WARNING'
-            else:
+            elif word_bit_IDLE[0] == 1 or  word_bit_light[1] == 1 or (word_bit_light[0] == 0 and word_bit_light[1] == 0 and word_bit_light[2] == 1 and word_bit_IDLE[0] == 0 ) or (word_bit_light[0] == 1 and word_bit_light[1] == 0 and word_bit_light[2] == 0 and word_bit_IDLE[0] == 0 ) or (word_bit_light[0] == 1 and word_bit_light[2] == 1 and word_bit_light[1] == 0 and word_bit_IDLE[0] == 0 and not has_error):
                 if plc.clStartStopTime1 is not None:
                     timeerror = (current_time - plc.clStartStopTime1).total_seconds() 
                     print(f"Thời gian {current_time} máy {plc.clNameMachine} Error: {timeerror:.0f}s")
@@ -206,7 +195,7 @@ class MainLogic(QObject):
     def handle_stop_error(self, plc, current_time, word_bit_light, wordunits_errors1, word_bit_IDLE):
         try:
             has_error = any(value == 1 for value in wordunits_errors1)
-            if (word_bit_light[0] == 0 and word_bit_light[1] == 0 and word_bit_light[2] ==1 and word_bit_IDLE[0] == 0 ) or ( word_bit_light[1] == 1 and word_bit_IDLE[0] == 0 )  :                  
+            if (word_bit_light[0] == 0 and word_bit_light[1] == 0 and word_bit_light[2] ==1 and word_bit_IDLE[0] == 0 ) or (word_bit_light[1] == 1)  :                  
                 if plc.clStartStopTime is None :
                     plc.clStartStopTime = current_time
                     if word_bit_light[1] == 1:
@@ -215,7 +204,7 @@ class MainLogic(QObject):
                         plc.clYellow = '0'
                         plc.clRed = '1'
                     else:
-                        plc.clStatus = 'WARNING'
+                        plc.clStatus = 'ERROR'
                         plc.clGreen = '0'
                         plc.clYellow = '1'
                         plc.clRed = '0'
@@ -229,7 +218,7 @@ class MainLogic(QObject):
                         plc.clYellow = '0'
                         plc.clRed = '1'
                     else:
-                        plc.clStatus = 'WARNING'
+                        plc.clStatus = 'ERROR'
                         plc.clGreen = '0'
                         plc.clYellow = '1'
                         plc.clRed = '0'
@@ -238,7 +227,6 @@ class MainLogic(QObject):
                     time_stop = (current_time - plc.clStartStopTime).total_seconds()
                     print(f"Thời gian {current_time} máy {plc.clNameMachine} Stop : {time_stop:.0f}s")
                     plc.clStartStopTime = None
-                    # self.conn.insert_stop_time(self.Config['factory'], self.Config['line'], plc.clNameMachine, time_stop)
                     self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"stop_time",time_stop,current_time)
         except Exception as ex:
             print(f'Error handle stop error state: {ex}')
@@ -292,7 +280,7 @@ class MainLogic(QObject):
     def handle_run_state(self,plc, current_time, wordunits_errors1, word_bit_light, word_bit_IDLE):
         try:
             has_error = any(value == 1 for value in wordunits_errors1)
-            if (word_bit_light[0] ==1 and word_bit_light[1] ==0 and word_bit_light[2] ==0 and word_bit_IDLE[0] == 0):
+            if (word_bit_light[0] ==1 and word_bit_light[1] ==0 and word_bit_light[2] ==0 and word_bit_IDLE[0] == 0 and not has_error) or (word_bit_light[0] == 1 and word_bit_light[2] == 1 and word_bit_light[1] == 0 and word_bit_IDLE[0] == 0 and not has_error):
                 if plc.clStartRunTime is None:
                     plc.clStatus = 'NORMAL'
                     plc.clGreen = '1'
@@ -302,22 +290,18 @@ class MainLogic(QObject):
                     print(f"Máy {plc.clNameMachine} bắt đầu chạy lúc {plc.clStartRunTime.strftime('%Y-%m-%d %H:%M:%S')}")
                     self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
                     self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], plc.clNameMachine,'NORMAL')
-                    plc.hasPrintedError = True
                 else:
                     plc.clStatus = 'NORMAL'
                     # plc.clError = ''
                     plc.clYellow = '0'
                     plc.clRed = '0'
-            elif word_bit_IDLE[0] == 1 or (word_bit_light[0] ==0 and word_bit_light[2] ==1 and word_bit_light[1] ==0) or has_error or word_bit_light[1] == 1 or (word_bit_light[0] ==1 and word_bit_light[2] ==1 and word_bit_light[1] ==0) :
+            elif word_bit_IDLE[0] == 1 or (word_bit_light[0] ==0 and word_bit_light[2] ==1 and word_bit_light[1] ==0) or has_error or word_bit_light[1] == 1 or (word_bit_light[0] ==1 and word_bit_light[2] ==1 and word_bit_light[1] ==0 and has_error)  :
                 if plc.clStartRunTime is not None:
                     timeRun = (current_time - plc.clStartRunTime).total_seconds()
                     print(f"Máy {plc.clNameMachine} hết chạy, tổng thời gian chạy: {timeRun:.0f}s")
                     plc.clStartRunTime = None
-                    plc.hasPrintedError = False
                     # Thêm bản ghi vào bộ đệm
                     self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "run_time", timeRun, current_time)
-                else:
-                    plc.hasPrintedError = False
         except Exception as ex:
             print(f'Error handle run state: {ex}')
     # Sản lượng pass, fail
@@ -335,7 +319,7 @@ class MainLogic(QObject):
                         self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "output", 5, currentTime)
                         self.conn.insert_production1(self.Config['factory'],self.Config['line'], plc.clNameMachine, 'PASS', currentTime)
                         print(f'Máy {plc.clNameMachine} IP: {plc.clIpaddr} pass làn 1 tại {currentTime}')
-                        plc.clConnect += 1
+                        plc.clConnect += 5
                     self.previous_output[plc.clNameMachine][0] = output
                     pymc3e.batchwrite_bitunits(headdevice="L5711", values=[0])
                 if i == 1:
