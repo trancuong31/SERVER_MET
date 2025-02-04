@@ -131,6 +131,7 @@ class MainLogic(QObject):
                 plc.flag = True
         else:
             plc.flag = False
+
     #xử lý trạng thái IDLE
     def handle_idle_state(self,plc, current_time, word_bit_IDLE, wordunits_errors ):
         try: 
@@ -155,6 +156,7 @@ class MainLogic(QObject):
                     self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "standby_time", idle_time, current_time)
                     plc.clStartIDLE = None
                 else:
+
                     plc.clIDLE = '0'
         except Exception as ex:
             print(f'Error handle idle state: {ex}')
@@ -252,6 +254,7 @@ class MainLogic(QObject):
                 errorCode = ', '.join(str(error) for error in listError)
                 plc.clError = errorCode
             # Xử lý lỗi đã kết thúc
+
             for i in list(plc.clStartErrorTime.keys()):  # Duyệt qua các lỗi hiện có
                 # Kiểm tra nếu lỗi đã hết (giá trị 0 tương ứng)
                 if i <= len(wordunits_errors) and wordunits_errors[i - 1] == 0:
@@ -264,7 +267,7 @@ class MainLogic(QObject):
                     
                     print(f'Kết thúc lỗi {listErrors[i]} máy {plc.clNameMachine} mã {listErrorCode[i]} tại {end_time}. Thời gian lỗi: {error_duration}s')
                     # Cập nhật vào cơ sở dữ liệu
-                    if error_duration > 2:
+                    if error_duration > 2: 
                         self.conn.update_error_on(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i], end_time) 
                         self.conn.cnt_update_error_on(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i], end_time)
                     else:
@@ -348,7 +351,7 @@ class MainLogic(QObject):
                 #     self.previous_output_fail[plc.clNameMachine][3] = output
                 #     pymc3e.batchwrite_bitunits(headdevice="L5214", values=[0])
         except Exception as ex:
-            print(f'Error handle Product Output: {ex}')
+            print(f'Error handle Product Output machine {plc.clNameMachine}: {ex}')
     # Sản lượng pickup, throw
     def handl_pickup_throw(self, plc, currentTime, word_bit_pick, pymc3e):
         if plc.clNameMachine not in self.previous_pickup:
@@ -406,8 +409,8 @@ class MainLogic(QObject):
                     self.previous_throw[plc.clNameMachine][7] = pick  
                     pymc3e.batchwrite_bitunits(headdevice="L5720", values=[0]) 
         except Exception as ex:
-            print(f'Error handl pickup throw: {ex}')
-    
+            print(f'Error handl pickup throw machine {plc.clNameMachine}: {ex}')
+    # Read file config
     def read_errors_from_txt(self, file_path):
         try:
             errors_dict = {}
@@ -432,11 +435,18 @@ class MainLogic(QObject):
         except Exception as ex:
             print(f'Error handle cycle time: {ex}')
     # Xử lý kết nối lại PLC
+    #Reset trạng thái máy 
+    def reset_plc_status(self, machine_status):
+        machine_status["clStartIDLE"] = None
+        machine_status["clStartStopTime"] = None
+        machine_status["clStartStopTime1"] = None
+        machine_status["clStartRunTime"] = None
+        print(f'Đã reset trạng thái máy sau khi kết nối lại thành công!!')
     def retry_connect_plc(self, plc, retry_count=5):
         attempts = 0
         while attempts < retry_count:
             try:
-                ipPLC = plc["ip"] 
+                ipPLC = plc["ip"]
                 ipPort = plc["port"]
                 nameMachine = plc["nameMachine"]
                 typeMachine = plc["typeMachine"]
@@ -445,10 +455,11 @@ class MainLogic(QObject):
                 print(f'Kết nối lại thành công với PLC {nameMachine}')
                 self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
                 self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'NORMAL')
+                
                 return pymc3e  # Kết nối lại thành công
             except Exception as ex:
                 attempts += 1
-                time.sleep(5) 
+                time.sleep(10)
                 self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '0')
                 self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'PAUSE')
                 print(f'Không thể kết nối lại với PLC {nameMachine}: {ex}. Thử lại lần {attempts}/{retry_count}.')
@@ -486,7 +497,6 @@ class MainLogic(QObject):
                     self.handle_Product_Output(machine_status, current_time, word_bit_output, pymc3e)
                     self.handl_pickup_throw(machine_status, current_time, word_bit_pick_throw, pymc3e)
                     self.handle_cycle_time(machine_status, current_time, word_cycle_time, pymc3e)
-
                     self.update_signal.emit(list(self.machines_status.values()))
                     time.sleep(0.3)
             except Exception as ex:
@@ -499,8 +509,14 @@ class MainLogic(QObject):
                     if new_connection is not None:
                         with self.lock:
                             plc_connections[nameMachine] = new_connection
+                            machine_status.clStartIDLE = None
+                            machine_status.clStartStopTime = None
+                            machine_status.clStartStopTime1 = None
+                            machine_status.clStartRunTime = None
+                            print('Reset trạng thái máy sau khi kết nối lại thành công!!')
                     else:
                         print(f'Không thể kết nối lại với PLC {nameMachine}.')
+                    
     #Khởi tạo kết nối list PLC
     def initialize_connections(self, plc_connections):
         for plc in self.plcList:
@@ -513,6 +529,7 @@ class MainLogic(QObject):
                 pymc3e.connect(ipPLC, ipPort)
                 print(f'Kết nối thành công tới PLC {ipPLC}:{ipPort}')
                 plc_connections[nameMachine] = pymc3e
+
                 # Khởi tạo thông tin MÁY ban đầu
                 machine_status = self.machines_status.get(nameMachine)
                 if machine_status:
