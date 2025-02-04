@@ -1,0 +1,16 @@
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-12-04 09:49:07
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-12-04 09:49:41
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-12-04 09:50:11
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-12-04 09:50:41
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-12-04 09:53:28
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:53:41
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:53:49
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:53:57
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:54:08
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:54:19
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-12-04 09:54:43
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:55:04
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:55:11
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:55:18
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:55:29
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-12-04 09:55:37

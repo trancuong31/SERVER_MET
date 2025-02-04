@@ -1,7 +1,6 @@
 {
   "plcs": [
-    {"ip": "192.168.1.10", "port": 9999, "nameMachine":"LB1" , "typeMachine":"ASSEMBLY"},
-    {"ip": "192.168.1.25", "port": 9914, "nameMachine":"LB2" , "typeMachine":"ASSEMBLY"}
+    {"ip": "192.168.1.10", "port": 9999, "nameMachine":"LB1" , "typeMachine":"ASSEMBLY"}
 
   ]
 }

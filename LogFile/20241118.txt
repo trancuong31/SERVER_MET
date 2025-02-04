@@ -1,0 +1,12 @@
+Thời gian 2024-11-18 10:59:50 máy LB2 RUN lúc 59:59s : 282s
+Thời gian 2024-11-18 10:59:50 máy LB1 RUN lúc 59:59s : 237s
+Thời gian 2024-11-18 11:59:50 máy LB2 RUN lúc 59:59s : 3080s
+Thời gian 2024-11-18 11:59:50 máy LB1 RUN lúc 59:59s : 3527s
+Thời gian 2024-11-18 12:59:50 máy LB2 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-18 12:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-18 13:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-18 13:59:50 máy LB2 RUN lúc 59:59s : 3464s
+Thời gian 2024-11-18 14:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-18 14:59:50 máy LB2 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-18 15:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-18 15:59:50 máy LB2 RUN lúc 59:59s : 3600s

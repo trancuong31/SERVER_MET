@@ -1,3 +1,0 @@
-Time Error của máy LB1 : 73.0s
-Time Error của máy LB1 : 9.0s
-Time Error của máy LB1 : 1.0s

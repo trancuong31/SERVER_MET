@@ -1,0 +1,10 @@
+Thời gian 2024-12-05 13:59:50 máy LB1 RUN lúc 59:59s : 2179s
+Thời gian 2024-12-05 14:59:50 máy LB1 RUN lúc 59:59s : 267s
+Thời gian 2024-12-05 15:59:50 máy LB1 RUN lúc 59:59s : 1796s
+Thời gian 2024-12-05 16:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-12-05 17:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-12-05 18:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-12-05 19:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-12-05 20:59:50 máy LB1 IDLE lúc 59:59s : 3584s
+Thời gian 2024-12-05 21:59:50 máy LB1 IDLE lúc 59:59s : 3600s
+Thời gian 2024-12-05 22:59:50 máy LB1 IDLE lúc 59:59s : 3600s

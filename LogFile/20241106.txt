@@ -1,0 +1,13 @@
+Thời gian 2024-11-06 09:59:50 máy LB1 RUN lúc 59:59s : 1669s
+Thời gian 2024-11-06 09:59:50 máy LB2 RUN lúc 59:59s : 1669s
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-06 10:02:14
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-06 10:02:15
+Lỗi kết nối với PLC LB1: MainLogic.update_signal[list].emit(): argument 1 has unexpected type 'MachineStatus'      2024-11-06 10:49:02
+Lỗi kết nối với PLC LB2: MainLogic.update_signal[list].emit(): argument 1 has unexpected type 'MachineStatus'      2024-11-06 10:49:02
+Thời gian 2024-11-06 15:59:50 máy LB2 RUN lúc 59:59s : 5s
+Thời gian 2024-11-06 16:59:50 máy LB1 RUN lúc 59:59s : 3601s
+Thời gian 2024-11-06 16:59:50 máy LB2 ERROR lúc 59:59s : 3578s
+Thời gian 2024-11-06 16:59:50 máy LB1 RUN lúc 59:59s : 6s
+Thời gian 2024-11-06 16:59:50 máy LB2 ERROR lúc 59:59s : 2s
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-06 16:47:15
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-06 16:47:15

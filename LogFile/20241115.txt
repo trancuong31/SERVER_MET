@@ -1,0 +1,8 @@
+Thời gian 2024-11-15 13:59:50 máy LB2 RUN lúc 59:59s : 258s
+Thời gian 2024-11-15 13:59:50 máy LB1 RUN lúc 59:59s : 19s
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-15 14:04:32
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-15 14:05:12
+Thời gian 2024-11-15 14:59:50 máy LB1 RUN lúc 59:59s : 1010s
+Thời gian 2024-11-15 14:59:50 máy LB2 RUN lúc 59:59s : 3026s
+Thời gian 2024-11-15 15:59:50 máy LB1 IDLE lúc 59:59s : 1776s
+Thời gian 2024-11-15 15:59:50 máy LB2 RUN lúc 59:59s : 3600s

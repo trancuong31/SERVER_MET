@@ -7,8 +7,21 @@
     <x>0</x>
     <y>0</y>
     <width>1327</width>
-    <height>589</height>
+    <height>627</height>
    </rect>
+  </property>
+  <property name="font">
+   <font>
+    <weight>50</weight>
+    <italic>true</italic>
+    <bold>false</bold>
+    <underline>true</underline>
+    <strikeout>false</strikeout>
+    <stylestrategy>PreferDefault</stylestrategy>
+   </font>
+  </property>
+  <property name="mouseTracking">
+   <bool>false</bool>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -232,6 +245,27 @@
      <string>SERVER MET</string>
     </property>
    </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>1230</x>
+      <y>560</y>
+      <width>81</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>5</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Created by Cường MET</string>
+    </property>
+    <property name="textFormat">
+     <enum>Qt::PlainText</enum>
+    </property>
+   </widget>
    <zorder>nameproject</zorder>
    <zorder>dgvMachineStatus</zorder>
    <zorder>lbStatus</zorder>
@@ -240,6 +274,7 @@
    <zorder>line_3</zorder>
    <zorder>name</zorder>
    <zorder>setting</zorder>
+   <zorder>label</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">

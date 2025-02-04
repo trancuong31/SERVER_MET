@@ -1,0 +1,22 @@
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-07 07:38:09
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-07 07:49:58
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:50:24
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:50:30
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:50:36
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:50:41
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:50:47
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-07 07:56:36
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:57:03
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:57:09
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:57:15
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:57:20
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 07:57:26
+Thời gian 2024-11-07 10:59:50 máy LB1 RUN lúc 59:59s : 6s
+Thời gian 2024-11-07 10:59:50 máy LB2 ERROR lúc 59:59s : 8s
+Thời gian 2024-11-07 11:59:50 máy LB2 IDLE lúc 59:59s : 3464s
+Thời gian 2024-11-07 11:59:50 máy LB1 RUN lúc 59:59s : 3468s
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-07 23:09:50
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 23:10:11
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 23:10:18
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 23:10:26
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-07 23:10:40

@@ -1,0 +1,2 @@
+Lỗi kết nối với PLC LB2: timed out      2024-11-05 17:37:25
+Lỗi kết nối với PLC LB1: timed out      2024-11-05 17:37:32

@@ -1,0 +1,4 @@
+Thời gian 2024-11-14 09:59:50 máy LB2 RUN lúc 59:59s : 3418s
+Thời gian 2024-11-14 09:59:50 máy LB1 RUN lúc 59:59s : 3246s
+Thời gian 2024-11-14 14:59:50 máy LB2 RUN lúc 59:59s : 101s
+Thời gian 2024-11-14 14:59:50 máy LB1 RUN lúc 59:59s : 78s

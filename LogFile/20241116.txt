@@ -1,0 +1,44 @@
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 08:03:44
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 08:04:24
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-16 08:04:29
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2024-11-16 08:04:39
+Thời gian 2024-11-16 09:59:50 máy LB1 RUN lúc 59:59s : 2663s
+Thời gian 2024-11-16 09:59:50 máy LB2 RUN lúc 59:59s : 2873s
+Thời gian 2024-11-16 10:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-16 10:59:50 máy LB2 RUN lúc 59:59s : 3600s
+Thời gian 2024-11-16 14:59:50 máy LB2 RUN lúc 59:59s : 174s
+Thời gian 2024-11-16 14:59:50 máy LB1 RUN lúc 59:59s : 425s
+Thời gian 2024-11-16 15:59:50 máy LB1 RUN lúc 59:59s : 296s
+Thời gian 2024-11-16 15:59:50 máy LB2 RUN lúc 59:59s : 3464s
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:40:29
+Lỗi kết nối với PLC LB2: timed out      2024-11-16 16:40:57
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:41:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:41:31
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:41:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:42:01
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:42:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:42:31
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:42:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:43:02
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:43:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:43:32
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:43:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:44:02
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:44:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:44:32
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:44:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:45:02
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:45:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:45:32
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:45:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:46:02
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:46:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:46:32
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:46:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:47:02
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:47:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:47:32
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:47:40
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:48:02
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:48:10
+Lỗi kết nối với PLC LB2: [WinError 10054] An existing connection was forcibly closed by the remote host      2024-11-16 16:48:32

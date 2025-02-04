@@ -1,0 +1,1 @@
+Lỗi kết nối với PLC LB1: MainLogic.handle_stop_error() takes 6 positional arguments but 7 were given      2024-11-22 07:17:07

@@ -1,0 +1,4 @@
+Thời gian 2024-12-17 07:59:50 máy LB1 RUN lúc 59:59s : 185s
+Thời gian 2024-12-17 08:59:50 máy LB1 RUN lúc 59:59s : 3125s
+Thời gian 2024-12-17 09:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2024-12-17 10:59:50 máy LB1 RUN lúc 59:59s : 3600s
