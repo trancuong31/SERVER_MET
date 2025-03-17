@@ -1,0 +1,15 @@
+Thời gian 2025-03-15 09:59:50 máy LB1 RUN lúc 59:59s : 416s
+Lỗi kết nối với PLC LB1: connectDB.insert_machine_data() takes 2 positional arguments but 3 were given      2025-03-15 09:59:50
+Error handle product output machine LB1 state: [WinError 10053] An established connection was aborted by the software in your host machine
+Error handle pickup throw machine LB1: [WinError 10053] An established connection was aborted by the software in your host machine
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2025-03-15 09:59:57
+Thời gian 2025-03-15 10:59:50 máy LB1 RUN lúc 59:59s : 2582s
+Thời gian 2025-03-15 11:59:50 máy LB1 RUN lúc 59:59s : 3390s
+Thời gian 2025-03-15 12:59:50 máy LB1 RUN_TIME lúc 59:59s : 3387s
+Thời gian 2025-03-15 13:59:50 máy LB1 RUN_TIME lúc 59:59s : 3411s
+Thời gian 2025-03-15 11:59:50 máy LB1 RUN_TIME lúc 59:59s : 2117s
+Thời gian 2025-03-15 12:59:50 máy LB1 RUN_TIME lúc 59:59s : 5717s
+Thời gian 2025-03-15 13:59:50 máy LB1 RUN_TIME lúc 59:59s : 1846s
+Lỗi insert_machine_data : 'connectDB' object has no attribute 'connection'
+Thời gian 2025-03-15 15:59:50 máy LB1 RUN lúc 59:59s : 1365s
+Thời gian 2025-03-15 16:59:50 máy LB1 RUN lúc 59:59s : 889s

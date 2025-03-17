@@ -1,0 +1,9 @@
+Kết nối thành công SERVER !!
+Kết nối thành công SERVER !!
+Kết nối thành công SERVER !!
+Kết nối thành công SERVER !!
+Lỗi insert_machine_data : 'connectDB' object has no attribute 'connection'
+Lỗi insert_machine_data : 'connectDB' object has no attribute 'connection'
+Lỗi insert_machine_data : 'connectDB' object has no attribute 'connection'
+Lỗi insert_machine_data : 'connectDB' object has no attribute 'connection'
+Thời gian 2025-03-13 15:59:50 máy LB1 RUN lúc 59:59s : 129s

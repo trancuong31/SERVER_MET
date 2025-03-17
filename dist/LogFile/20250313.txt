@@ -1,0 +1,1 @@
+Lỗi khi kết nối tới cơ sở dữ liệu: ORA-12170: TNS:Connect timeout occurred

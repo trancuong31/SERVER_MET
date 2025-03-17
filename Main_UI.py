@@ -63,14 +63,14 @@ class MainWindow(QMainWindow):
         reply = QMessageBox.question(
             self,
             "Cảnh báo quan trọng!",
-            "⚠️ Nếu bạn tắt chương trình này, **hệ thống sẽ không thể theo dõi trạng thái máy móc**. Điều này có thể gây ảnh hưởng nghiêm trọng đến độ chính xác của dữ liệu! \n\nBạn có chắc chắn muốn thoát không?",
+            "⚠️ Nếu bạn tắt chương trình này, hệ thống sẽ không thể theo dõi trạng thái máy móc. \n\nBạn có chắc chắn muốn thoát không?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            event.accept()  # Đồng ý thoát
+            event.accept() 
         else:
-            event.ignore()  # Hủy việc thoát
+            event.ignore() 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
