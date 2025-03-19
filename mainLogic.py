@@ -51,8 +51,8 @@ class MainLogic(QObject):
                         self.conn.insert_machine_data(buffer, self.Config['UPH'])
                     except Exception as e:
                         print(f"Error updating CNT_MACHINE_SUMMARY database for {nameMachine}: {e}")
-            
-            time.sleep(60)
+
+            time.sleep(100)
    
     def update_buffer_list(self, nameMachine, factory, line, machine_code, data_type, value, current_time):
         work_date = current_time.strftime("%Y-%m-%d %H")
@@ -84,7 +84,7 @@ class MainLogic(QObject):
     def insert_time_default(self, plc, current_time):
         minutes = current_time.minute
         seconds = current_time.second
-        if minutes == 59 and 50 <= seconds <= 55:
+        if minutes == 59 and 50 <= seconds <= 58:
             if not plc.flag:
                 # with self.lock:
                 if plc.clStartIDLE is not None:
@@ -165,6 +165,7 @@ class MainLogic(QObject):
                     plc.clIDLE = '0'
         except Exception as ex:
             print(f'Error handle idle state: {ex}')
+            Config.writeLog(f'Error handle idle state: {ex} máy {plc.clNameMachine}     {current_time}')
     #Xử lý trạng thái Error nhưng máy vẫn chạy bình thường
     def handle_error (self, plc, current_time, word_bit_light, wordunits_errors1 , word_bit_IDLE):  
         try:
@@ -194,6 +195,7 @@ class MainLogic(QObject):
                     plc.clStatus = 'NORMAL'
         except Exception as ex:
             print(f'Error handle error state: {ex}')
+            Config.writeLog(f'Error handle error state: {ex} máy {plc.clNameMachine}     {current_time}')
     #Xử lý trạng thái Stop
     def handle_stop_error(self, plc, current_time, word_bit_light, wordunits_errors1, word_bit_IDLE):
         try:
@@ -233,6 +235,7 @@ class MainLogic(QObject):
                     self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"stop_time",time_stop,current_time)
         except Exception as ex:
             print(f'Error handle stop error state: {ex}')
+            Config.writeLog(f'Error handle stop error state: {ex} máy {plc.clNameMachine}     {current_time}')
     #Xử lý lỗi
     def handle_error_state_combined(self, plc, current_time, listErrors, listErrorCode, wordunits_errors):
         try:
@@ -283,6 +286,7 @@ class MainLogic(QObject):
                 plc.clError = ''
         except Exception as ex:
             print(f'Error handle error state combined: {ex}')
+            Config.writeLog(f'Error handle error state combined: {ex} máy {plc.clNameMachine}     {current_time}')
     #Xử lý trạng thái Run
     def handle_run_state(self,plc, current_time, wordunits_errors1, word_bit_light, word_bit_IDLE):
         try:
@@ -311,6 +315,7 @@ class MainLogic(QObject):
                     self.update_buffer_list(plc.clNameMachine, self.Config['factory'], self.Config['line'], plc.clNameMachine, "run_time", timeRun, current_time)
         except Exception as ex:
             print(f'Error handle run state: {ex}')
+            Config.writeLog(f'Error handle run state: {ex} máy {plc.clNameMachine}     {current_time}')
     # Sản lượng pass, fail
     def handle_Product_Output(self, plc, currentTime ,word_bit_output, pymc3e):
         try:
@@ -357,6 +362,7 @@ class MainLogic(QObject):
                 #     pymc3e.batchwrite_bitunits(headdevice="L5214", values=[0])
         except Exception as ex:
             print(f'Error handle Product Output machine {plc.clNameMachine}: {ex}')
+            Config.writeLog(f'Error handle Product Output machine {plc.clNameMachine}: {ex}     {currentTime}')
     # Sản lượng pickup, throw
     def handl_pickup_throw(self, plc, currentTime, word_bit_pick, pymc3e):
         if plc.clNameMachine not in self.previous_pickup:
@@ -415,6 +421,7 @@ class MainLogic(QObject):
                     pymc3e.batchwrite_bitunits(headdevice="L5720", values=[0]) 
         except Exception as ex:
             print(f'Error handl pickup throw machine {plc.clNameMachine}: {ex}')
+            Config.writeLog(f'Error handl pickup throw machine {plc.clNameMachine}: {ex}      {currentTime}')
     # Read file config
     def read_errors_from_txt(self, file_path):
         try:
@@ -439,6 +446,7 @@ class MainLogic(QObject):
             self.previous_cycle_time[plc.clNameMachine] = word_cycle_time[0]
         except Exception as ex:
             print(f'Error handle cycle time: {ex}')
+            
     # Xử lý kết nối lại PLC
     #Reset trạng thái máy 
     def reset_plc_status(self, machine_status):
@@ -459,8 +467,7 @@ class MainLogic(QObject):
                 pymc3e.connect(ipPLC, ipPort)
                 print(f'Kết nối lại thành công với PLC {nameMachine}')
                 self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
-                # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'NORMAL')
-                
+                # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'NORMAL')                
                 return pymc3e  # Kết nối lại thành công
             except Exception as ex:
                 attempts += 1
@@ -469,6 +476,7 @@ class MainLogic(QObject):
                 # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'PAUSE')
                 print(f'Không thể kết nối lại với PLC {nameMachine}: {ex}. Thử lại lần {attempts}/{retry_count}.')
         print(f'Sau {retry_count} lần thử, không thể kết nối với PLC {nameMachine}. Dừng thử lại.')
+        Config.writeLog(f'Sau {retry_count} lần thử, không thể kết nối với PLC {nameMachine}. Dừng thử lại.')
         return None
     #Xử lý dữ liệu của từng PLC
     def collect_data_from_plc(self,all_machines, plc, plc_connections, machines_status, Config1):

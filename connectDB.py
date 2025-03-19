@@ -1,5 +1,6 @@
 import oracledb
 import datetime
+from clConfig import Config 
 import threading
 class connectDB:
     # Tạo đối tượng lock để đảm bảo an toàn luồng
@@ -17,7 +18,7 @@ class connectDB:
                 password="pthnew",
                 dsn="10.228.114.170:3333/meorcl"
                 # user="system",
-                # password="123456",           
+                # password="123456",
                 # dsn="localhost:1521/orcl3"  
             )
             print('Kết nối thành công SERVER !!')
@@ -25,6 +26,13 @@ class connectDB:
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi kết nối tới cơ sở dữ liệu: {e}")
             return None
+    
+    def is_connection_active(self, connection):
+        try:
+            connection.ping()  # Ping kiểm tra xem kết nối còn sống không
+            return True
+        except oracledb.DatabaseError:
+            return False
     # Hàm truy vấn dữ liệu
     def select(self, connection, query, parameters=None):
         cursor = connection.cursor()
@@ -44,19 +52,27 @@ class connectDB:
     def execute_query(self,connection, query, parameters=None):
         cursor = connection.cursor()
         try:
+            if not self.is_connection_active(connection):
+                print("Kết nối bị mất, đang tái kết nối...")
+                
+                # Sử dụng lock để đảm bảo rằng chỉ có một luồng tái tạo kết nối
+                with self.lock_DB:
+                    if not self.is_connection_active(connection):
+                        self.connection = self.create_connection()  # Tái kết nối
+                        connection = self.connection
             if parameters:
                 cursor.execute(query, parameters)
             else:
                 cursor.execute(query)
-            connection.commit()  # Xác nhận thay đổi
+            connection.commit()  
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi thực thi truy vấn: {e}")
-            connection.rollback()  # Hoàn tác nếu có lỗi
+            connection.rollback() 
         finally:
             cursor.close()
 
     def insert_machine_data(self, buffer, uph):
-        work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")  # Định dạng thời gian
+        work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")  
         try:
             batch_queries = []
             with connectDB.lock_DB:
@@ -64,7 +80,6 @@ class connectDB:
                     factory, line, machine_code, hour = key.split(',')
                     machine_no = f"{factory}_{line}_{machine_code}"
                     
-                    # Câu lệnh MERGE để kiểm tra và chèn hoặc cập nhật bản ghi
                     merge_query = f"""
                     MERGE INTO CNT_MACHINE_SUMMARY target
                     USING (SELECT '{machine_no}' AS MACHINE_NO, TO_DATE('{work_date}', 'YYYY-MM-DD HH24') AS WORK_DATE FROM dual) source
@@ -106,6 +121,7 @@ class connectDB:
                 return True
         except Exception as e:
             print(f"Lỗi: {e}")
+            Config.writeLog(f'Error insert_machine_data máy {machine_no}: {e}  : {hour}')
             return False
 
     # def insert_on_time(self, factory, line, machine_code, time_run):
