@@ -14,12 +14,12 @@ class connectDB:
             oracledb.init_oracle_client()  # Kiểm tra nếu có Oracle Client sẵn
             print("Oracle Instant Client is available.")
             connection = oracledb.connect(
-                user="pthnew",
-                password="pthnew",
-                dsn="10.228.114.170:3333/meorcl"
-                # user="system",
-                # password="123456",
-                # dsn="localhost:1521/orcl3"  
+                # user="pthnew",
+                # password="pthnew",
+                # dsn="10.228.114.170:3333/meorcl"
+                user="system",
+                password="123456",
+                dsn="localhost:1521/orcl3"  
             )
             print('Kết nối thành công SERVER !!')
             return connection
@@ -27,9 +27,9 @@ class connectDB:
             print(f"Lỗi khi kết nối tới cơ sở dữ liệu: {e}")
             return None
     
-    def is_connection_active(self, connection):
+    def is_connection_active(self):
         try:
-            connection.ping()  # Ping kiểm tra xem kết nối còn sống không
+            self.connection.ping()  
             return True
         except oracledb.DatabaseError:
             return False
@@ -52,13 +52,12 @@ class connectDB:
     def execute_query(self,connection, query, parameters=None):
         cursor = connection.cursor()
         try:
-            if not self.is_connection_active(connection):
+            if not self.is_connection_active():
                 print("Kết nối bị mất, đang tái kết nối...")
                 
-                # Sử dụng lock để đảm bảo rằng chỉ có một luồng tái tạo kết nối
                 with self.lock_DB:
-                    if not self.is_connection_active(connection):
-                        self.connection = self.create_connection()  # Tái kết nối
+                    if not self.is_connection_active():
+                        self.connection = self.create_connection() 
                         connection = self.connection
             if parameters:
                 cursor.execute(query, parameters)
@@ -68,6 +67,7 @@ class connectDB:
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi thực thi truy vấn: {e}")
             connection.rollback() 
+            Config.writeLog(f"Lỗi khi thực thi truy vấn: {e}")
         finally:
             cursor.close()
 

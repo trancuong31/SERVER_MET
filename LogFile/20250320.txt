@@ -1,0 +1,7 @@
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2025-03-20 10:54:02
+Sau 5 lần thử, không thể kết nối với PLC LB1. Dừng thử lại.
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2025-03-20 10:55:07
+Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was forcibly closed by the remote host      2025-03-20 10:59:04
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2025-03-20 10:59:21
+Sau 5 lần thử, không thể kết nối với PLC LB1. Dừng thử lại.
+Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2025-03-20 11:00:26

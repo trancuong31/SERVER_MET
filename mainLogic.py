@@ -511,12 +511,14 @@ class MainLogic(QObject):
                     self.handl_pickup_throw(machine_status, current_time, word_bit_pick_throw, pymc3e)
                     # self.handle_cycle_time(machine_status, current_time, word_cycle_time, pymc3e)
                     self.update_signal.emit(list(self.machines_status.values()))
+                    
                     time.sleep(0.3)
             except Exception as ex:
                     time.sleep(5)
                     print(f'Lỗi kết nối với PLC {nameMachine}: {ex}      {current_time}')
                     Config.writeLog(f'Lỗi kết nối với PLC {nameMachine}: {ex}      {current_time}')
                     self.conn.update_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, Config1['projectName'], machine_status.typeMachine, Config1['UPH'], Config1['ipServer'], Config1['dbName'], '0')
+                    print(f'Đã update trạng thái plc {machine_status.clNameMachine}')    
                     # self.conn.update_oracle_machine_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, 'PAUSE')
                     new_connection = self.retry_connect_plc(plc)
                     if new_connection is not None:
