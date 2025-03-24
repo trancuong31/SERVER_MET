@@ -15,16 +15,23 @@ class MainLogic(QObject):
     def __init__(self):
         super().__init__()
         self.plc = MachineStatus()
+        self.error_names = self.read_errors_from_txt('errorName.txt')
+        self.error_codes = self.read_errors_from_txt('errorCode.txt')
         self.machines_status = {}
         self.previous_cycle_time = {}
         self.previous_pickup = {}
         self.previous_throw = {}
         self.previous_output = {}
         self.previous_output_fail = {}
-        self.buffers = {}
+        self.buffers = {} #bảng cnt_machine_summary buffers
+        self.status_buffer = [] # bảng cnt_machine_infor
+        self.error_buffer = {}   # bảng cnt_machine_error_record
+        self.error_lock = threading.Lock() 
         self.conn = connectDB()
-        
-        self.start_buffer_flush_thread()
+        self.status_lock = threading.Lock()
+        self.start_buffer_flush_thread() 
+        self.start_status_flush_thread()
+        self.start_error_flush_thread()
         with open('data.json', 'r') as file:
             self.Config = json.load(file)
         with open('plcConfig.json', 'r') as file:
@@ -33,31 +40,52 @@ class MainLogic(QObject):
             self.machines_status[plc["nameMachine"]] = MachineStatus()
             self.machines_status[plc["nameMachine"]].clStartErrorTime = {}
     lock = threading.Lock()
-
     def start_buffer_flush_thread(self):
         threading.Thread(target=self.flush_buffer_periodically, daemon=True).start()
+
+    def start_status_flush_thread(self):
+        threading.Thread(target=self.flush_status_periodically, daemon=True).start()
+
+    def start_error_flush_thread(self):
+        threading.Thread(target=self.flush_error_buffer_periodically, daemon=True).start()
 
     def flush_buffer_periodically(self):
         while True:
             buffers_to_flush = {}
-            # Chỉ lock khi copy buffer
             with self.lock:
                 buffers_to_flush = self.buffers.copy()
-                self.buffers.clear() 
-
+                self.buffers.clear()
+            batch_data = []
             for nameMachine, buffer in buffers_to_flush.items():
-                if buffer:
-                    try:
-                        self.conn.insert_machine_data(buffer, self.Config['UPH'])
-                    except Exception as e:
-                        print(f"Error updating CNT_MACHINE_SUMMARY database for {nameMachine}: {e}")
+                for key, values in buffer.items():
+                    batch_data.append((key, values))
 
-            time.sleep(100)
+            if batch_data:
+                try:
+                    success = self.conn.insert_machine_data(dict(batch_data), self.Config['UPH'])
+                    if not success:
+                        print("Batch insert failed, rolling back data.")
+                        with self.lock:
+                            for key, values in batch_data:
+                                nameMachine = key.split(',')[2] 
+                                if nameMachine not in self.buffers:
+                                    self.buffers[nameMachine] = {}
+                                self.buffers[nameMachine][key] = values
+                except Exception as e:
+                    print(f"Error in flush_buffer_periodically: {e}")
+                    with self.lock:
+                        for key, values in batch_data:
+                            nameMachine = key.split(',')[2]
+                            if nameMachine not in self.buffers:
+                                self.buffers[nameMachine] = {}
+                            self.buffers[nameMachine][key] = values
+
+            time.sleep(300)
    
     def update_buffer_list(self, nameMachine, factory, line, machine_code, data_type, value, current_time):
         work_date = current_time.strftime("%Y-%m-%d %H")
         key = f"{factory},{line},{machine_code},{work_date}"
-        if nameMachine not in self.buffers: 
+        if nameMachine not in self.buffers:
             self.buffers[nameMachine] = {}
         with self.lock:
             if key not in self.buffers[nameMachine]:
@@ -79,6 +107,53 @@ class MainLogic(QObject):
                     "uph": 0
                 }
             self.buffers[nameMachine][key][data_type] += value
+
+   
+    def flush_status_periodically(self):
+        while True:
+            status_to_flush = []
+            with self.status_lock:
+                if self.status_buffer:
+                    unique_status = {}
+                    for status in self.status_buffer:
+                        machine_no = f"{status['factory']}_{status['line']}_{status['machine_code']}"
+                        unique_status[machine_no] = status
+                    status_to_flush = list(unique_status.values())
+                    self.status_buffer.clear()
+
+            if status_to_flush:
+                try:
+                    self.conn.update_status(status_to_flush)
+                except Exception as e:
+                    print(f"Error updating machine statuses: {e}")
+                    Config.writeLog(f"Error updating machine statuses: {e}")
+                    with self.status_lock:
+                        self.status_buffer.extend(status_to_flush)
+
+            time.sleep(1) 
+
+    def flush_error_buffer_periodically(self):
+        while True:
+            errors_to_flush = {}
+            with self.error_lock:
+                if self.error_buffer:
+                    errors_to_flush = self.error_buffer.copy()
+                    self.error_buffer.clear()
+
+            if errors_to_flush:
+                error_records = list(errors_to_flush.values())
+                try:
+                    success = self.conn.cnt_process_error_records(error_records)
+                    if not success:
+                        print("Batch error insert failed, rolling back data.")
+                        with self.error_lock:
+                            self.error_buffer.update(errors_to_flush)
+                except Exception as e:
+                    print(f"Error in flush_error_buffer_periodically: {e}")
+                    with self.error_lock:
+                        self.error_buffer.update(errors_to_flush)
+
+            time.sleep(2)
 
     # Lấy trạng thái mãy định kì mỗi giờ
     def insert_time_default(self, plc, current_time):
@@ -136,7 +211,6 @@ class MainLogic(QObject):
                 plc.flag = True
         else:
             plc.flag = False
-
     #xử lý trạng thái IDLE
     def handle_idle_state(self,plc, current_time, word_bit_IDLE, wordunits_errors ):
         try: 
@@ -150,7 +224,21 @@ class MainLogic(QObject):
                     plc.clYellow = '0'
                     plc.clStatus = 'NORMAL'
                     print(f'Máy bắt đầu IDLE {plc.clNameMachine} lúc {plc.clStartIDLE}')
-                    self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine,self.Config['projectName'],plc.typeMachine,self.Config['UPH'],self.Config['ipServer'],self.Config['dbName'], '2')
+
+                    with self.status_lock:
+                        self.status_buffer.append({
+                            'factory': self.Config['factory'],
+                            'line': self.Config['line'],
+                            'machine_code': plc.clNameMachine,
+                            'project_name': self.Config['projectName'],
+                            'section_name': plc.typeMachine,
+                            'uph': self.Config['UPH'],
+                            'db_ip': self.Config['ipServer'],
+                            'db_server_name': self.Config['dbName'],
+                            'current_state': '2'
+                        })
+
+                    # self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine,self.Config['projectName'],plc.typeMachine,self.Config['UPH'],self.Config['ipServer'],self.Config['dbName'], '2')
                 else:
                     plc.clIDLE = '1'
                     plc.clStatus = 'NORMAL'
@@ -178,7 +266,20 @@ class MainLogic(QObject):
                     plc.clStartStopTime1 = current_time
                     plc.clStatus = 'WARNING'
                     print(f'Máy bắt đầu Error {plc.clNameMachine} lúc {plc.clStartStopTime1}')
-                    self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '3')
+                    
+                    with self.status_lock:
+                        self.status_buffer.append({
+                            'factory': self.Config['factory'],
+                            'line': self.Config['line'],
+                            'machine_code': plc.clNameMachine,
+                            'project_name': self.Config['projectName'],
+                            'section_name': plc.typeMachine,
+                            'uph': self.Config['UPH'],
+                            'db_ip': self.Config['ipServer'],
+                            'db_server_name': self.Config['dbName'],
+                            'current_state': '3'
+                        })
+                    # self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '3')
                     # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], plc.clNameMachine,'ERROR')
                 else:
                     plc.clGreen = '1'
@@ -214,7 +315,19 @@ class MainLogic(QObject):
                         plc.clYellow = '1'
                         plc.clRed = '0'
                     print(f'Máy bắt đầu Stop {plc.clNameMachine} lúc {plc.clStartStopTime}')
-                    self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '4')
+                    with self.status_lock:
+                        self.status_buffer.append({
+                            'factory': self.Config['factory'],
+                            'line': self.Config['line'],
+                            'machine_code': plc.clNameMachine,
+                            'project_name': self.Config['projectName'],
+                            'section_name': plc.typeMachine,
+                            'uph': self.Config['UPH'],
+                            'db_ip': self.Config['ipServer'],
+                            'db_server_name': self.Config['dbName'],
+                            'current_state': '4'
+                        })
+                    # self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '4')
                     # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], plc.clNameMachine,'STOP')
                 else:
                     if word_bit_light[1] == 1:
@@ -237,56 +350,130 @@ class MainLogic(QObject):
             print(f'Error handle stop error state: {ex}')
             Config.writeLog(f'Error handle stop error state: {ex} máy {plc.clNameMachine}     {current_time}')
     #Xử lý lỗi
+    # def handle_error_state_combined(self, plc, current_time, listErrors, listErrorCode, wordunits_errors):
+    #     try:
+    #         listError = []
+    #         if not hasattr(plc, 'clStartErrorTime'):
+    #             plc.clStartErrorTime = {}
+            
+    #         # Kiểm tra có lỗi hay không
+    #         has_error = any(value == 1 for value in wordunits_errors)
+    #         if has_error:
+    #             plc.clYellow = '1'
+    #             for i, error in enumerate(wordunits_errors):
+    #                 if error == 1:
+    #                     listError.append(i + 1)
+    #                     # Lưu thời gian bắt đầu chỉ khi chưa được lưu
+    #                     if (i + 1) not in plc.clStartErrorTime:
+    #                         plc.clStartErrorTime[i + 1] = current_time  # Lưu thời gian bắt đầu
+    #                         print(f'Bắt đầu của lỗi {listErrors[i + 1]} máy {plc.clNameMachine} là {current_time}')
+    #                         # Ghi vào cơ sở dữ liệu
+    #                         # self.conn.insert_error_timeon(self.Config['factory'], self.Config['line'], plc.clNameMachine, 'ERROR', listErrorCode[i + 1], listErrors[i + 1], plc.clStartErrorTime[i + 1], self.Config['owner'])
+    #                         self.conn.cnt_insert_error_timeon(self.Config['factory'], self.Config['line'], plc.clNameMachine, self.Config['projectName'], plc.typeMachine, (i + 1), listErrorCode[i + 1], plc.clStartErrorTime[i + 1])
+
+    #             # Cập nhật lỗi cho PLC
+    #             errorCode = ', '.join(str(error) for error in listError)
+    #             plc.clError = errorCode
+    #         # Xử lý lỗi đã kết thúc
+
+    #         for i in list(plc.clStartErrorTime.keys()):  # Duyệt qua các lỗi hiện có
+    #             # Kiểm tra nếu lỗi đã hết (giá trị 0 tương ứng)
+    #             if i <= len(wordunits_errors) and wordunits_errors[i - 1] == 0:
+    #                 start_time = plc.clStartErrorTime.pop(i)  # Lấy và xóa thời gian bắt đầu
+    #                 end_time = current_time
+    #                 error_duration = (end_time - start_time).total_seconds()  # Tính thời gian đã trôi qua
+                    
+    #                 if error_duration < 0:  # Kiểm tra thời gian âm
+    #                     error_duration = 0
+                    
+    #                 print(f'Kết thúc lỗi {listErrors[i]} máy {plc.clNameMachine} mã {listErrorCode[i]} tại {end_time}. Thời gian lỗi: {error_duration}s')
+    #                 # Cập nhật vào cơ sở dữ liệu
+    #                 if error_duration > 2: 
+    #                     # self.conn.update_error_on(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i], end_time) 
+    #                     self.conn.cnt_update_error_on(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i], end_time)
+    #                 else:
+    #                     # self.conn.update_error_on1(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i])
+    #                     self.conn.cnt_update_error_on1(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i])
+    #                     print('Đã xóa lỗi < 2s khỏi DB!!')
+    #         if not plc.clStartErrorTime:
+    #             plc.clError = ''
+    #     except Exception as ex:
+    #         print(f'Error handle error state combined: {ex}')
+    #         Config.writeLog(f'Error handle error state combined: {ex} máy {plc.clNameMachine}     {current_time}')
+    # Tính toán thời gian bắt đầu, kết thúc lỗi 
     def handle_error_state_combined(self, plc, current_time, listErrors, listErrorCode, wordunits_errors):
         try:
             listError = []
             if not hasattr(plc, 'clStartErrorTime'):
                 plc.clStartErrorTime = {}
             
-            # Kiểm tra có lỗi hay không
+            # Kiểm tra lỗi mới
             has_error = any(value == 1 for value in wordunits_errors)
             if has_error:
                 plc.clYellow = '1'
                 for i, error in enumerate(wordunits_errors):
                     if error == 1:
                         listError.append(i + 1)
-                        # Lưu thời gian bắt đầu chỉ khi chưa được lưu
                         if (i + 1) not in plc.clStartErrorTime:
-                            plc.clStartErrorTime[i + 1] = current_time  # Lưu thời gian bắt đầu
+                            plc.clStartErrorTime[i + 1] = current_time
                             print(f'Bắt đầu của lỗi {listErrors[i + 1]} máy {plc.clNameMachine} là {current_time}')
-                            # Ghi vào cơ sở dữ liệu
-                            # self.conn.insert_error_timeon(self.Config['factory'], self.Config['line'], plc.clNameMachine, 'ERROR', listErrorCode[i + 1], listErrors[i + 1], plc.clStartErrorTime[i + 1], self.Config['owner'])
-                            self.conn.cnt_insert_error_timeon(self.Config['factory'], self.Config['line'], plc.clNameMachine, self.Config['projectName'], plc.typeMachine, (i + 1), listErrorCode[i + 1], plc.clStartErrorTime[i + 1])
+                            error_record = {
+                                'factory': self.Config['factory'],
+                                'line': self.Config['line'],
+                                'machine_code': plc.clNameMachine,
+                                'project_name': self.Config['projectName'],
+                                'section_name': plc.typeMachine,
+                                'error_id': i + 1,
+                                'error_code': listErrorCode[i + 1],
+                                'start_time': plc.clStartErrorTime[i + 1]
+                            }
+                            with self.error_lock:
+                                key = f"{plc.clNameMachine}_{listErrorCode[i + 1]}"
+                                self.error_buffer[key] = error_record
 
-                # Cập nhật lỗi cho PLC
                 errorCode = ', '.join(str(error) for error in listError)
                 plc.clError = errorCode
-            # Xử lý lỗi đã kết thúc
 
-            for i in list(plc.clStartErrorTime.keys()):  # Duyệt qua các lỗi hiện có
-                # Kiểm tra nếu lỗi đã hết (giá trị 0 tương ứng)
+            # Xử lý lỗi đã kết thúc
+            for i in list(plc.clStartErrorTime.keys()):
                 if i <= len(wordunits_errors) and wordunits_errors[i - 1] == 0:
-                    start_time = plc.clStartErrorTime.pop(i)  # Lấy và xóa thời gian bắt đầu
+                    start_time = plc.clStartErrorTime.pop(i)
                     end_time = current_time
-                    error_duration = (end_time - start_time).total_seconds()  # Tính thời gian đã trôi qua
-                    
-                    if error_duration < 0:  # Kiểm tra thời gian âm
+                    error_duration = (end_time - start_time).total_seconds()
+                    if error_duration < 0:
                         error_duration = 0
                     
                     print(f'Kết thúc lỗi {listErrors[i]} máy {plc.clNameMachine} mã {listErrorCode[i]} tại {end_time}. Thời gian lỗi: {error_duration}s')
-                    # Cập nhật vào cơ sở dữ liệu
-                    if error_duration > 2: 
-                        # self.conn.update_error_on(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i], end_time) 
-                        self.conn.cnt_update_error_on(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i], end_time)
+                    if error_duration > 2:
+                        error_record = {
+                            'factory': self.Config['factory'],
+                            'line': self.Config['line'],
+                            'machine_code': plc.clNameMachine,
+                            'project_name': self.Config['projectName'],
+                            'section_name': plc.typeMachine,
+                            'error_id': i,
+                            'error_code': listErrorCode[i],
+                            'start_time': start_time,
+                            'end_time': end_time
+                        }
+                        with self.error_lock:
+                            key = f"{plc.clNameMachine}_{listErrorCode[i]}"
+                            self.error_buffer[key] = error_record
                     else:
-                        # self.conn.update_error_on1(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i])
                         self.conn.cnt_update_error_on1(self.Config['factory'], self.Config['line'], plc.clNameMachine, listErrorCode[i])
-                        print('Đã xóa lỗi < 2s khỏi DB!!')
+                        with self.error_lock:
+                            key = f"{plc.clNameMachine}_{listErrorCode[i]}"
+                            if key in self.error_buffer:
+                                del self.error_buffer[key]
+                        print('Đã xóa lỗi < 2s khỏi DB và buffer!!')
+                    
             if not plc.clStartErrorTime:
                 plc.clError = ''
+
         except Exception as ex:
             print(f'Error handle error state combined: {ex}')
             Config.writeLog(f'Error handle error state combined: {ex} máy {plc.clNameMachine}     {current_time}')
+
     #Xử lý trạng thái Run
     def handle_run_state(self,plc, current_time, wordunits_errors1, word_bit_light, word_bit_IDLE):
         try:
@@ -299,7 +486,19 @@ class MainLogic(QObject):
                     plc.clRed = '0'
                     plc.clStartRunTime = current_time
                     print(f"Máy {plc.clNameMachine} bắt đầu chạy lúc {plc.clStartRunTime.strftime('%Y-%m-%d %H:%M:%S')}")
-                    self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
+                    with self.status_lock:
+                        self.status_buffer.append({
+                            'factory': self.Config['factory'],
+                            'line': self.Config['line'],
+                            'machine_code': plc.clNameMachine,
+                            'project_name': self.Config['projectName'],
+                            'section_name': plc.typeMachine,
+                            'uph': self.Config['UPH'],
+                            'db_ip': self.Config['ipServer'],
+                            'db_server_name': self.Config['dbName'],
+                            'current_state': '1'
+                        })
+                    # self.conn.update_status(self.Config['factory'], self.Config['line'],plc.clNameMachine, self.Config['projectName'],plc.typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
                     # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], plc.clNameMachine,'NORMAL')
                 else:
                     plc.clStatus = 'NORMAL'
@@ -446,7 +645,6 @@ class MainLogic(QObject):
             self.previous_cycle_time[plc.clNameMachine] = word_cycle_time[0]
         except Exception as ex:
             print(f'Error handle cycle time: {ex}')
-            
     # Xử lý kết nối lại PLC
     #Reset trạng thái máy 
     def reset_plc_status(self, machine_status):
@@ -455,6 +653,7 @@ class MainLogic(QObject):
         machine_status["clStartStopTime1"] = None
         machine_status["clStartRunTime"] = None
         print(f'Đã reset trạng thái máy sau khi kết nối lại thành công!!')
+    #Kết nối lại với PLC
     def retry_connect_plc(self, plc, retry_count=5):
         attempts = 0
         while attempts < retry_count:
@@ -466,13 +665,38 @@ class MainLogic(QObject):
                 pymc3e = pymcprotocol.Type3E()
                 pymc3e.connect(ipPLC, ipPort)
                 print(f'Kết nối lại thành công với PLC {nameMachine}')
-                self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
+                with self.status_lock:
+                    self.status_buffer.append({
+                        'factory': self.Config['factory'],
+                        'line': self.Config['line'],
+                        'machine_code': nameMachine,
+                        'project_name': self.Config['projectName'],
+                        'section_name': typeMachine,
+                        'uph': self.Config['UPH'],
+                        'db_ip': self.Config['ipServer'],
+                        'db_server_name': self.Config['dbName'],
+                        'current_state': '1'
+                    })
+                # self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '1')
                 # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'NORMAL')                
                 return pymc3e  # Kết nối lại thành công
             except Exception as ex:
                 attempts += 1
                 time.sleep(10)
-                self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '0')
+                with self.status_lock:
+                        self.status_buffer.append({
+                            'factory': self.Config['factory'],
+                            'line': self.Config['line'],
+                            'machine_code': nameMachine,
+                            'project_name': self.Config['projectName'],
+                            'section_name': typeMachine,
+                            'uph': self.Config['UPH'],
+                            'db_ip': self.Config['ipServer'],
+                            'db_server_name': self.Config['dbName'],
+                            'current_state': '0'
+                        })
+                
+                # self.conn.update_status(self.Config['factory'], self.Config['line'],nameMachine, self.Config['projectName'],typeMachine, self.Config['UPH'], self.Config['ipServer'], self.Config['dbName'], '0')
                 # self.conn.update_oracle_machine_status(self.Config['factory'], self.Config['line'], nameMachine,'PAUSE')
                 print(f'Không thể kết nối lại với PLC {nameMachine}: {ex}. Thử lại lần {attempts}/{retry_count}.')
         print(f'Sau {retry_count} lần thử, không thể kết nối với PLC {nameMachine}. Dừng thử lại.')
@@ -491,8 +715,8 @@ class MainLogic(QObject):
                     pymc3e = plc_connections.get(nameMachine)
                 if pymc3e:
                     plc_connections[nameMachine] = pymc3e
-                    listErrors = self.read_errors_from_txt('errorName.txt')
-                    listErrorCode = self.read_errors_from_txt('errorCode.txt')
+                    listErrors = self.error_names
+                    listErrorCode = self.error_codes
                     wordunits_errors = pymc3e.batchread_bitunits(headdevice="L5503", readsize=206)
                     word_bit_IDLE = pymc3e.batchread_bitunits(headdevice="L5710", readsize=1)
                     word_bit_output = pymc3e.batchread_bitunits(headdevice="L5711", readsize=2)
@@ -517,8 +741,20 @@ class MainLogic(QObject):
                     time.sleep(5)
                     print(f'Lỗi kết nối với PLC {nameMachine}: {ex}      {current_time}')
                     Config.writeLog(f'Lỗi kết nối với PLC {nameMachine}: {ex}      {current_time}')
-                    self.conn.update_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, Config1['projectName'], machine_status.typeMachine, Config1['UPH'], Config1['ipServer'], Config1['dbName'], '0')
-                    print(f'Đã update trạng thái plc {machine_status.clNameMachine}')    
+                    # with self.status_lock:
+                    #     self.status_buffer.append({
+                    #         'factory': self.Config['factory'],
+                    #         'line': self.Config['line'],
+                    #         'machine_code': nameMachine,
+                    #         'project_name': self.Config['projectName'],
+                    #         'section_name': machine_status.typeMachine,
+                    #         'uph': self.Config['UPH'],
+                    #         'db_ip': self.Config['ipServer'],
+                    #         'db_server_name': self.Config['dbName'],
+                    #         'current_state': '0'
+                    #     })
+                    # self.conn.update_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, Config1['projectName'], machine_status.typeMachine, Config1['UPH'], Config1['ipServer'], Config1['dbName'], '0')
+                    
                     # self.conn.update_oracle_machine_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, 'PAUSE')
                     new_connection = self.retry_connect_plc(plc)
                     if new_connection is not None:

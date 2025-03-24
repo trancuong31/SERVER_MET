@@ -1,0 +1,81 @@
+Thời gian 2025-03-22 08:59:50 máy LB1 RUN lúc 59:59s : 63s
+Error handle run state: 'MainLogic' object has no attribute 'status_lock' máy LB1     2025-03-22 16:50:24
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Thời gian 2025-03-22 16:59:50 máy LB1 IDLE lúc 59:59s : 227s
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Error processing batch error records: ORA-38104: Columns referenced in the ON Clause cannot be updated: "TARGET"."END_TIME"
+Error processing batch error records: ORA-38104: Columns referenced in the ON Clause cannot be updated: "TARGET"."END_TIME"
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Error processing batch error records: ORA-38104: Columns referenced in the ON Clause cannot be updated: "TARGET"."END_TIME"
+Error processing batch error records: ORA-38104: Columns referenced in the ON Clause cannot be updated: "TARGET"."END_TIME"
+Error processing batch error records: ORA-38104: Columns referenced in the ON Clause cannot be updated: "TARGET"."END_TIME"
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Error processing batch error records: ORA-01036: illegal variable name/number
+Error processing batch error records: ORA-01036: illegal variable name/number
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Error processing batch error records: ORA-01036: illegal variable name/number
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 1 inserts and 0 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch processed 0 inserts and 1 updates in CNT_MACHINE_ERROR_RECORD
+Batch updated 1 machine statuses in CNT_MACHINE_INFO
+Thời gian 2025-03-22 19:59:50 máy LB1 RUN lúc 59:59s : 78s
+Thời gian 2025-03-22 20:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2025-03-22 21:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2025-03-22 22:59:50 máy LB1 RUN lúc 59:59s : 3600s
+Thời gian 2025-03-22 23:59:50 máy LB1 RUN lúc 59:59s : 3600s

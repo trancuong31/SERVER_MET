@@ -19,7 +19,7 @@ class connectDB:
                 # dsn="10.228.114.170:3333/meorcl"
                 user="system",
                 password="123456",
-                dsn="localhost:1521/orcl3"  
+                dsn="localhost:1521/orcl3"
             )
             print('Kết nối thành công SERVER !!')
             return connection
@@ -27,13 +27,6 @@ class connectDB:
             print(f"Lỗi khi kết nối tới cơ sở dữ liệu: {e}")
             return None
     
-    def is_connection_active(self):
-        try:
-            self.connection.ping()  
-            return True
-        except oracledb.DatabaseError:
-            return False
-    # Hàm truy vấn dữ liệu
     def select(self, connection, query, parameters=None):
         cursor = connection.cursor()
         try:
@@ -52,13 +45,6 @@ class connectDB:
     def execute_query(self,connection, query, parameters=None):
         cursor = connection.cursor()
         try:
-            if not self.is_connection_active():
-                print("Kết nối bị mất, đang tái kết nối...")
-                
-                with self.lock_DB:
-                    if not self.is_connection_active():
-                        self.connection = self.create_connection() 
-                        connection = self.connection
             if parameters:
                 cursor.execute(query, parameters)
             else:
@@ -66,425 +52,272 @@ class connectDB:
             connection.commit()  
         except oracledb.DatabaseError as e:
             print(f"Lỗi khi thực thi truy vấn: {e}")
-            connection.rollback() 
+            connection.rollback()
             Config.writeLog(f"Lỗi khi thực thi truy vấn: {e}")
         finally:
             cursor.close()
 
     def insert_machine_data(self, buffer, uph):
-        work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")  
+        work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")
         try:
-            batch_queries = []
-            with connectDB.lock_DB:
-                for key, values in buffer.items():
-                    factory, line, machine_code, hour = key.split(',')
-                    machine_no = f"{factory}_{line}_{machine_code}"
-                    
-                    merge_query = f"""
-                    MERGE INTO CNT_MACHINE_SUMMARY target
-                    USING (SELECT '{machine_no}' AS MACHINE_NO, TO_DATE('{work_date}', 'YYYY-MM-DD HH24') AS WORK_DATE FROM dual) source
-                    ON (target.MACHINE_NO = source.MACHINE_NO AND target.WORK_DATE = source.WORK_DATE)
-                    WHEN MATCHED THEN
-                        UPDATE SET 
-                            RUN_TIME = NVL(target.RUN_TIME, 0) + {values['run_time']},
-                            ERROR_TIME = NVL(target.ERROR_TIME, 0) + {values['error_time']},
-                            STANDBY_TIME = NVL(target.STANDBY_TIME, 0) + {values['standby_time']},
-                            STOP_TIME = NVL(target.STOP_TIME, 0) + {values['stop_time']},
-                            OUTPUT = NVL(target.OUTPUT, 0) + {values['output']},
-                            THROW_QTY1 = NVL(target.THROW_QTY1, 0) + {values['THROW_QTY1']},
-                            THROW_QTY2 = NVL(target.THROW_QTY2, 0) + {values['THROW_QTY2']},
-                            PICK_QTY1 = NVL(target.PICK_QTY1, 0) + {values['PICK_QTY1']},
-                            PICK_QTY2 = NVL(target.PICK_QTY2, 0) + {values['PICK_QTY2']},
-                            THROW_QTY3 = NVL(target.THROW_QTY3, 0) + {values['THROW_QTY3']},
-                            THROW_QTY4 = NVL(target.THROW_QTY4, 0) + {values['THROW_QTY4']},
-                            PICK_QTY3 = NVL(target.PICK_QTY3, 0) + {values['PICK_QTY3']},
-                            PICK_QTY4 = NVL(target.PICK_QTY4, 0) + {values['PICK_QTY4']},
-                            NG_QTY = NVL(target.NG_QTY, 0) + {values['NG_QTY']},
-                            UPH = {uph}
-                    WHEN NOT MATCHED THEN
-                        INSERT (MACHINE_NO, WORK_DATE, RUN_TIME, STANDBY_TIME, ERROR_TIME, STOP_TIME, OUTPUT, THROW_QTY1, THROW_QTY2, 
-                                PICK_QTY1, PICK_QTY2, THROW_QTY3, THROW_QTY4, PICK_QTY3, PICK_QTY4, NG_QTY, UPH)
-                        VALUES ('{machine_no}', TO_DATE('{work_date}', 'YYYY-MM-DD HH24'), {values['run_time']}, {values['standby_time']}, 
-                                {values['error_time']}, {values['stop_time']}, {values['output']}, {values['THROW_QTY1']}, {values['THROW_QTY2']}, 
-                                {values['PICK_QTY1']}, {values['PICK_QTY2']}, {values['THROW_QTY3']}, {values['THROW_QTY4']}, 
-                                {values['PICK_QTY3']}, {values['PICK_QTY4']}, {values['NG_QTY']}, {uph})
-                    """                    
-                    # Thêm MERGE query vào batch_queries
-                    batch_queries.append(merge_query)
+            # Chuẩn bị dữ liệu cho batch
+            batch_data = []
+            for key, values in buffer.items():
+                factory, line, machine_code, hour = key.split(',')
+                machine_no = f"{factory}_{line}_{machine_code}"
+                batch_data.append({
+                    'machine_no': machine_no,
+                    'work_date': work_date,
+                    'run_time': values['run_time'],
+                    'error_time': values['error_time'],
+                    'standby_time': values['standby_time'],
+                    'stop_time': values['stop_time'],
+                    'output': values['output'],
+                    'THROW_QTY1': values['THROW_QTY1'],
+                    'THROW_QTY2': values['THROW_QTY2'],
+                    'PICK_QTY1': values['PICK_QTY1'],
+                    'PICK_QTY2': values['PICK_QTY2'],
+                    'THROW_QTY3': values['THROW_QTY3'],
+                    'THROW_QTY4': values['THROW_QTY4'],
+                    'PICK_QTY3': values['PICK_QTY3'],
+                    'PICK_QTY4': values['PICK_QTY4'],
+                    'NG_QTY': values['NG_QTY'],
+                    'uph': uph
+                })
 
-                # Thực thi tất cả các câu lệnh trong batch
-                for query in batch_queries:
-                    self.execute_query(self.connection, query)
-
-                self.connection.commit()
-                print(f"Batch update thành công máy {machine_no} lên bảng CNT_MACHINE_SUMMARY!")
+            if not batch_data:
+                print("No data to insert.")
                 return True
+
+            # Câu lệnh MERGE
+            merge_query = """
+                MERGE INTO CNT_MACHINE_SUMMARY target
+                USING (SELECT :machine_no AS MACHINE_NO, TO_DATE(:work_date, 'YYYY-MM-DD HH24') AS WORK_DATE FROM dual) source
+                ON (target.MACHINE_NO = source.MACHINE_NO AND target.WORK_DATE = source.WORK_DATE)
+                WHEN MATCHED THEN
+                    UPDATE SET 
+                        RUN_TIME = NVL(target.RUN_TIME, 0) + :run_time,
+                        ERROR_TIME = NVL(target.ERROR_TIME, 0) + :error_time,
+                        STANDBY_TIME = NVL(target.STANDBY_TIME, 0) + :standby_time,
+                        STOP_TIME = NVL(target.STOP_TIME, 0) + :stop_time,
+                        OUTPUT = NVL(target.OUTPUT, 0) + :output,
+                        THROW_QTY1 = NVL(target.THROW_QTY1, 0) + :THROW_QTY1,
+                        THROW_QTY2 = NVL(target.THROW_QTY2, 0) + :THROW_QTY2,
+                        PICK_QTY1 = NVL(target.PICK_QTY1, 0) + :PICK_QTY1,
+                        PICK_QTY2 = NVL(target.PICK_QTY2, 0) + :PICK_QTY2,
+                        THROW_QTY3 = NVL(target.THROW_QTY3, 0) + :THROW_QTY3,
+                        THROW_QTY4 = NVL(target.THROW_QTY4, 0) + :THROW_QTY4,
+                        PICK_QTY3 = NVL(target.PICK_QTY3, 0) + :PICK_QTY3,
+                        PICK_QTY4 = NVL(target.PICK_QTY4, 0) + :PICK_QTY4,
+                        NG_QTY = NVL(target.NG_QTY, 0) + :NG_QTY,
+                        UPH = :uph
+                WHEN NOT MATCHED THEN
+                    INSERT (MACHINE_NO, WORK_DATE, RUN_TIME, STANDBY_TIME, ERROR_TIME, STOP_TIME, OUTPUT, 
+                            THROW_QTY1, THROW_QTY2, PICK_QTY1, PICK_QTY2, THROW_QTY3, THROW_QTY4, 
+                            PICK_QTY3, PICK_QTY4, NG_QTY, UPH)
+                    VALUES (:machine_no, TO_DATE(:work_date, 'YYYY-MM-DD HH24'), :run_time, :standby_time, 
+                            :error_time, :stop_time, :output, :THROW_QTY1, :THROW_QTY2, :PICK_QTY1, 
+                            :PICK_QTY2, :THROW_QTY3, :THROW_QTY4, :PICK_QTY3, :PICK_QTY4, :NG_QTY, :uph)
+            """
+
+            # Thực thi batch với executemany
+            with connectDB.lock_DB:
+                cursor = self.connection.cursor()
+                try:
+                    cursor.executemany(merge_query, batch_data)
+                    self.connection.commit()
+                    print(f"Batch update thành công {len(batch_data)} bản ghi lên bảng CNT_MACHINE_SUMMARY!")
+                    return True
+                except oracledb.DatabaseError as e:
+                    print(f"Lỗi khi thực thi batch: {e}")
+                    self.connection.rollback()
+                    Config.writeLog(f'Error insert_machine_data: {e}')
+                    return False
+                finally:
+                    cursor.close()
         except Exception as e:
             print(f"Lỗi: {e}")
-            Config.writeLog(f'Error insert_machine_data máy {machine_no}: {e}  : {hour}')
+            Config.writeLog(f'Error insert_machine_data: {e}')
+            return False
+  
+    def update_status(self, status_list):
+        try:
+            batch_data = [
+                {
+                    'machine_no': f"{s['factory']}_{s['line']}_{s['machine_code']}",
+                    'building': s['factory'],
+                    'project_name': s['project_name'],
+                    'section_name': s['section_name'],
+                    'line_name': s['line'],
+                    'uph': s['uph'],
+                    'db_ip': s['db_ip'],
+                    'db_server_name': s['db_server_name'],
+                    'current_state': s['current_state']
+                } for s in status_list
+            ]
+            if not batch_data:
+                print("No status data to update.")
+                return True
+
+            merge_query = """
+                MERGE INTO CNT_MACHINE_INFO target
+                USING (SELECT :machine_no AS MACHINE_NO FROM dual) source
+                ON (target.MACHINE_NO = source.MACHINE_NO)
+                WHEN MATCHED THEN
+                    UPDATE SET 
+                        CURRENT_STATE = :current_state
+                WHEN NOT MATCHED THEN
+                    INSERT (MACHINE_NO, BUILDING, PROJECT_NAME, SECTION_NAME, LINE_NAME, UPH, DB_IP, DB_SERVER_NAME, CURRENT_STATE)
+                    VALUES (:machine_no, :building, :project_name, :section_name, :line_name, :uph, :db_ip, :db_server_name, :current_state)
+            """
+
+            with connectDB.lock_DB:
+                cursor = self.connection.cursor()
+                try:
+                    cursor.executemany(merge_query, batch_data)
+                    self.connection.commit()
+                    print(f"Batch updated {len(batch_data)} machine statuses in CNT_MACHINE_INFO!")
+                    # Config.writeLog(f"Batch updated {len(batch_data)} machine statuses in CNT_MACHINE_INFO")
+                    return True
+                except oracledb.DatabaseError as e:
+                    print(f"Error updating batch statuses: {e}")
+                    self.connection.rollback()
+                    Config.writeLog(f"Error updating batch statuses: {e}")
+                    return False
+                finally:
+                    cursor.close()
+        except Exception as e:
+            print(f"Exception: {str(e)}")
+            Config.writeLog(f"Exception in update_status: {str(e)}")
             return False
 
-    # def insert_on_time(self, factory, line, machine_code, time_run):
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-    #     query = ""
-    #     try:
-    #         with connectDB.lock_DB:
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') = '%{work_date}%'"
-    #             data = self.select(self.connection, query)
+    def cnt_process_error_records(self, error_records):
+        try:
+            if not error_records:
+                print("No error records to process.")
+                return True
 
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     run_time = row[2] 
-    #                     if not run_time:
-    #                         run_time = 0
-    #                     if run_time == "":
-                            
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET RUN_TIME = '{time_run}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-                           
-    #                         run_time_1 = int(run_time) + int(time_run)
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET RUN_TIME = '{run_time_1}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-                   
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, RUN_TIME) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '{time_run}')"
+            # Phân loại bản ghi
+            insert_records = []
+            update_records = []
+            for record in error_records:
+                machine_no = f"{record['factory']}_{record['line']}_{record['machine_code']}"
+                start_time = record['start_time'].strftime('%Y-%m-%d %H:%M:%S') if record.get('start_time') else None
+                end_time = record['end_time'].strftime('%Y-%m-%d %H:%M:%S') if record.get('end_time') else None
                 
-    #             # Thực thi truy vấn
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"Lỗi: {e}")
-    #         return False
+                if end_time is None:
+                    # Chỉ lấy các trường cần cho INSERT
+                    insert_data = {
+                        'machine_no': machine_no,
+                        'project_name': record['project_name'],
+                        'section_name': record['section_name'],
+                        'error_id': record['error_id'],
+                        'error_code': record['error_code'],
+                        'start_time': start_time
+                    }
+                    insert_records.append(insert_data)
+                else:
+                    # Chỉ lấy các trường cần cho UPDATE
+                    update_data = {
+                        'machine_no': machine_no,
+                        'error_code': record['error_code'],
+                        'end_time': end_time
+                    }
+                    update_records.append(update_data)
 
-    # def insert_error_time(self, factory, line, machine_code, errorTime):
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H") 
-    #     query = ""
-    #     try:
-    #         with connectDB.lock_DB:  
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     errorTime1 = row[4]
-    #                     if not errorTime1:
-    #                         errorTime1 = 0
-    #                     if errorTime1 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET ERROR_TIME = '{errorTime}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-                           
-    #                         run_time_1 = int(errorTime1) + int(errorTime)
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET ERROR_TIME = '{run_time_1}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-                    
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, ERROR_TIME) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '{errorTime}')"
-                
-               
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"Lỗi: {e}")
-    #         return False
-        
-    # def insert_stop_time(self, factory, line, machine_code, timeStop):
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H") 
-    #     try:
-    #         with connectDB.lock_DB:  
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
+            with connectDB.lock_DB:
+                cursor = self.connection.cursor()
+                try:
+                    # Batch INSERT
+                    if insert_records:
+                        insert_query = """
+                            INSERT INTO CNT_MACHINE_ERROR_RECORD (
+                                MACHINE_NO, PROJECT_NAME, SECTION_NAME, ERROR_ID, ERROR_CODE, START_TIME
+                            ) VALUES (
+                                :machine_no, :project_name, :section_name, :error_id, :error_code,
+                                TO_DATE(:start_time, 'YYYY-MM-DD HH24:MI:SS')
+                            )
+                        """
+                        # print(f"Insert records: {insert_records}") 
+                        cursor.executemany(insert_query, insert_records)
+                        print(f"Batch inserted {len(insert_records)} new error records.")
 
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     stop_time = row[5] 
-    #                     if not stop_time:
-    #                         stop_time = 0
-    #                     if stop_time == "":
-                            
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET STOP_TIME = '{timeStop}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-                           
-    #                         stop_time_1 = int(stop_time) + int(timeStop)
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET STOP_TIME = '{stop_time_1}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-                    
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, STOP_TIME) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '{timeStop}')"
-                
-    #             # Thực thi truy vấn
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"Lỗi: {e}")
-    #         return False
+                    # Batch UPDATE
+                    if update_records:
+                        update_query = """
+                            UPDATE CNT_MACHINE_ERROR_RECORD
+                            SET END_TIME = TO_DATE(:end_time, 'YYYY-MM-DD HH24:MI:SS')
+                            WHERE MACHINE_NO = :machine_no
+                            AND ERROR_CODE = :error_code
+                            AND END_TIME IS NULL
+                        """
+                        # print(f"Update records: {update_records}") 
+                        cursor.executemany(update_query, update_records)
+                        print(f"Batch updated {len(update_records)} error records with END_TIME.")
 
-    # def insert_standby_time(self, factory, line, machine_code, timeStand):
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H") 
-    #     query = ""
-    #     try:
-    #         with connectDB.lock_DB: 
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
+                    self.connection.commit()
+                    # Config.writeLog(f"Batch processed {len(insert_records)} inserts and {len(update_records)} updates in CNT_MACHINE_ERROR_RECORD")
+                    return True
 
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     stand_time = row[3] 
-    #                     if not stand_time:
-    #                         stand_time = 0
-    #                     if stand_time == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET STANDBY_TIME = '{timeStand}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         stand_time_1 = int(stand_time) + int(timeStand)
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET STANDBY_TIME = '{stand_time_1}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, STANDBY_TIME) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '{timeStand}')"
-                
-    #             # Thực thi truy vấn
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"Lỗi: {e}")
-    #         return False
-
-    # def insert_production_pass(self, factory, line, machine_code, uph):
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H") 
-    #     query = ""
-    #     try:
-    #         with connectDB.lock_DB:  
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
-
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     output1 = row[6]  
-    #                     if not output1:
-    #                         output1 = 0
-    #                     if output1 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET OUTPUT = '5', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         output1_1 = int(output1) + 5
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET OUTPUT = '{output1_1}', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, OUTPUT, UPH) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '5', '{uph}')"
-
-    #             # Thực thi truy vấn
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"Lỗi: {e}")
-    #         return False
-
-    # def insert_throw_qty1(self, factory, line, machine_code, uph):
-    #     query = ""
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-        
-    #     try:
-    #         with connectDB.lock_DB:  
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"               
-    #             data = self.select(self.connection, query)
-                
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     throw_qty1 = row[7]  
-    #                     if throw_qty1 == None or throw_qty1 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET THROW_QTY1 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         throw_qty1_1 = int(throw_qty1) + 10
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET THROW_QTY1 = '{throw_qty1_1}', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, THROW_QTY1, UPH) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '10', '{uph}')"
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"ngoại lệ: {str(e)}")
-    #     return False
+                except oracledb.DatabaseError as e:
+                    print(f"Error processing batch error records: {e}")
+                    self.connection.rollback()
+                    Config.writeLog(f"Error processing batch error records: {e}")
+                    return False
+                finally:
+                    cursor.close()
+        except Exception as e:
+            print(f"Exception in cnt_process_error_records: {str(e)}")
+            Config.writeLog(f"Exception in cnt_process_error_records: {str(e)}")
+            return False
     
-    # def insert_pickup_qty1(self, factory, line, machine_code, uph):
-    #     query = ""
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-    #     try:
-    #         with connectDB.lock_DB:
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
-                
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     pick_qty1 = row[9]
-    #                     if pick_qty1 == None or pick_qty1 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY1 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         pick_qty1_1 = int(pick_qty1) + 10
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY1 = '{pick_qty1_1}', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, PICK_QTY1, UPH) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '10', '{uph}')"
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"ngoại lệ: {str(e)}")
-    #     return False
+    def cnt_update_error_on1(self, factory, line, machine_code, error_code):
+            with connectDB.lock_DB:
+                try:
+                    machine_no = f"{factory}_{line}_{machine_code}"
+                    query = """
+                    DELETE FROM CNT_MACHINE_ERROR_RECORD
+                    WHERE MACHINE_NO = :machine_no
+                    AND ERROR_CODE = :error_code
+                    AND END_TIME IS NULL
+                    """
+                    try:
+                        self.execute_query(self.connection, query, {"machine_no": machine_no, "error_code": error_code})
+                        return True
+                    except Exception as ex:
+                        print(f"Error executing query: {str(ex)}")
+                        return False
+                except Exception as e:
+                    print(f"Lỗi khi xóa lỗi: {str(e)}")
+                    return False
 
-    # def insert_pickup_qty2(self, factory, line, machine_code, uph):
-    #     query = ""
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-        
-    #     try:
-    #         with connectDB.lock_DB: 
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
-                
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     pick_qty2 = row[10] 
-    #                     if pick_qty2 == None or pick_qty2 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY2 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         pick_qty2_1 = int(pick_qty2) + 10
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY2 = '{pick_qty2_1}', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, PICK_QTY2, UPH) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '10', '{uph}')"
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"ngoại lệ: {str(e)}")
-    #     return False
 
-    # def insert_throw_qty2(self, factory, line, machine_code, uph):
-    #     query = ""
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-        
-    #     try:
-    #         with connectDB.lock_DB:
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
-                
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     throw_qty2 = row[8] 
-    #                     if throw_qty2 == None or throw_qty2 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET THROW_QTY2 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         throw_qty2_1 = int(throw_qty2) + 10
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET THROW_QTY2 = '{throw_qty2_1}', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, THROW_QTY2, UPH) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '10', '{uph}')"
-                
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"ngoại lệ: {str(e)}")
-    #     return False
-
-    # def insert_pickup_qty3(self, factory, line, machine_code, uph):
-    #     query = ""
-    #     work_date = datetime.datetime.now().strftime("%d-%m-%Y %H")
-        
-    #     try:
-    #         with connectDB.lock_DB: 
-    #             query = f"SELECT * FROM CNT_MACHINE_SUMMARY WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             data = self.select(self.connection, query)
-                
-    #             if data and len(data) > 0:
-    #                 for row in data:
-    #                     pick_qty3 = row[13]  
-    #                     if pick_qty3 == None or pick_qty3 == "":
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY3 = '10', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #                     else:
-    #                         pick_qty3_1 = int(pick_qty3) + 10
-    #                         query = f"UPDATE CNT_MACHINE_SUMMARY SET PICK_QTY3 = '{pick_qty3_1}', UPH = '{uph}' WHERE MACHINE_NO='{factory}_{line}_{machine_code}' AND TO_CHAR(WORK_DATE, 'dd-MM-yyyy HH24') LIKE '%{work_date}%'"
-    #             else:
-    #                 query = f"INSERT INTO CNT_MACHINE_SUMMARY (MACHINE_NO, WORK_DATE, PICK_QTY3, UPH) VALUES ('{factory}_{line}_{machine_code}', TO_DATE('{work_date}', 'dd-MM-yyyy HH24'), '10', '{uph}')"
-                
-    #             self.execute_query(self.connection, query)
-    #             return True
-    #     except Exception as e:
-    #         print(f"ngoại lệ: {str(e)}")
-    #     return False
-
-    # def insert_cycle_time(self, factory, line, machine_code, cycle_time, date_time):
-    #     query = ""
-    #     try:
-    #         with connectDB.lock_DB: 
-    #             query = f"INSERT INTO CYCLE_TIME_MACHINE (FACTORY, LINE, MACHINE_CODE, CYCLE, DATE_TIME) VALUES ('{factory}', '{line}', '{machine_code}', '{cycle_time}', TO_DATE('{date_time}', 'yyyy/MM/dd HH24:MI:SS'))"
-                
+    # def cnt_update_error_on1(self, error_list):
+    #     with connectDB.lock_DB:
+    #         try:
+    #             query = """
+    #                 DELETE FROM CNT_MACHINE_ERROR_RECORD
+    #                 WHERE MACHINE_NO = :machine_no
+    #                 AND ERROR_CODE = :error_code
+    #                 AND END_TIME IS NULL
+    #             """
+    #             data = [
+    #                 {
+    #                     "machine_no": f"{factory}_{line}_{machine_code}",
+    #                     "error_code": error_code
+    #                 }
+    #                 for factory, line, machine_code, error_code in error_list
+    #             ]
     #             try:
-    #                 self.execute_query(self.connection, query)
+    #                 self.connection.cursor().executemany(query, data)
+    #                 self.connection.commit()
+    #                 print(f"Đã xóa {len(data)} lỗi thành công!")
     #                 return True
     #             except Exception as ex:
-    #                 print(f"Error executing query: {str(ex)}")
-                    
-    #     except Exception as e:
-    #         print(f"ngoại lệ: {str(e)}")
-
-    #     return False  
-
-    def update_status(self, factory, line, machine_code, project_name, section_name, uph, db_ip, db_server_name, current_state):
-        machine_no = f"{factory}_{line}_{machine_code}"
-        
-        try:
-            with connectDB.lock_DB:
-                query = f"""
-                    MERGE INTO CNT_MACHINE_INFO target
-                    USING (SELECT '{machine_no}' AS MACHINE_NO, '{factory}' AS BUILDING, '{line}' AS LINE_NAME FROM dual) source
-                    ON (target.MACHINE_NO = source.MACHINE_NO AND target.BUILDING = source.BUILDING AND target.LINE_NAME = source.LINE_NAME)
-                    
-                    WHEN MATCHED THEN
-                        UPDATE SET 
-                            CURRENT_STATE = '{current_state}'
-                    
-                    WHEN NOT MATCHED THEN
-                        INSERT (MACHINE_NO, BUILDING, PROJECT_NAME, SECTION_NAME, LINE_NAME, UPH, DB_IP, DB_SERVER_NAME, CURRENT_STATE)
-                        VALUES ('{machine_no}', '{factory}', '{project_name}', '{section_name}', '{line}', '{uph}', '{db_ip}', '{db_server_name}', '{current_state}')
-                """
-                
-                # Thực thi câu lệnh MERGE
-                self.execute_query(self.connection, query)
-                return True
-        except Exception as e:
-            print(f"ngoại lệ: {str(e)}")
-        return False
-    def cnt_insert_error_timeon(self, factory, line, machine_code, project_name, section_name, error_id, error_code, time_error):
-        with connectDB.lock_DB:
-            try:
-                query = (f"INSERT INTO CNT_MACHINE_ERROR_RECORD (MACHINE_NO, PROJECT_NAME, SECTION_NAME, ERROR_ID, ERROR_CODE, START_TIME) "
-                    f"VALUES ('{factory}_{line}_{machine_code}', '{project_name}', '{section_name}', {error_id}, '{error_code}', "
-                    f"TO_DATE('{time_error}', 'yyyy/MM/dd HH24:mi:ss'))")
-                try:
-                    self.execute_query(self.connection, query)
-                    return True
-                except Exception as ex:
-                    print(f"Error executing query: {str(ex)}")
-            except Exception as e:
-                print(f"ngoại lệ: {str(e)}")
-                return False 
-    def cnt_update_error_on(self, factory, line, machine_code, error_code, time_fixed):
-        with connectDB.lock_DB:
-            try:
-                query = (f"UPDATE CNT_MACHINE_ERROR_RECORD "
-                        f"SET END_TIME = TO_DATE('{time_fixed}', 'yyyy/MM/dd HH24:mi:ss') "
-                        f"WHERE MACHINE_NO = '{factory}_{line}_{machine_code}' "
-                        f"AND ERROR_CODE = '{error_code}' AND END_TIME IS NULL")
-                try:
-                    self.execute_query(self.connection, query)
-                    return True
-                except Exception as ex:
-                    print(f"Error executing query: {str(ex)}")
-            except Exception as e:
-                print(f"ngoại lệ: {str(e)}")
-                return False
-    def cnt_update_error_on1(self, factory, line, machine_code, error_code):
-        with connectDB.lock_DB:
-            try:
-                machine_no = f"{factory}_{line}_{machine_code}"
-                query = """
-                DELETE FROM CNT_MACHINE_ERROR_RECORD
-                WHERE MACHINE_NO = :machine_no
-                AND ERROR_CODE = :error_code
-                AND END_TIME IS NULL
-                """
-                try:
-                    self.execute_query(self.connection, query, {"machine_no": machine_no, "error_code": error_code})
-                    return True
-                except Exception as ex:
-                    print(f"Error executing query: {str(ex)}")
-                    return False
-            except Exception as e:
-                print(f"Lỗi khi xóa lỗi: {str(e)}")
-                return False
-
+    #                 print(f"Error executing batch delete: {str(ex)}")
+    #                 self.connection.rollback()
+    #                 return False
+    #         except Exception as e:
+    #             print(f"Lỗi khi xóa lỗi: {str(e)}")
+    #             return False
 

@@ -1,0 +1,8 @@
+Exception in update_status: 'NoneType' object has no attribute 'cursor'
+Exception in update_status: 'NoneType' object has no attribute 'cursor'
+Exception in update_status: 'NoneType' object has no attribute 'cursor'
+Exception in cnt_process_error_records: 'NoneType' object has no attribute 'cursor'
+Exception in update_status: 'NoneType' object has no attribute 'cursor'
+Exception in update_status: 'NoneType' object has no attribute 'cursor'
+Exception in update_status: 'NoneType' object has no attribute 'cursor'
+Exception in update_status: 'NoneType' object has no attribute 'cursor'

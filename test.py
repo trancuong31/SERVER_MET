@@ -26,7 +26,7 @@ from pymcprotocol import Type3E
 #     print("Kết nối thành công với PLC.")
 # user="pthnew",
 # password="pthnew",
-# dsn="10.228.114.170:3333/meorcl"    
+# dsn="10.228.114.170:3333/meorcl"
 def main():
     pymc3e = Type3E()
     ip = '192.168.1.10'
