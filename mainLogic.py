@@ -153,64 +153,69 @@ class MainLogic(QObject):
                     with self.error_lock:
                         self.error_buffer.update(errors_to_flush)
 
-            time.sleep(2)
+            time.sleep(30)
 
     # Lấy trạng thái mãy định kì mỗi giờ
     def insert_time_default(self, plc, current_time):
         minutes = current_time.minute
         seconds = current_time.second
-        if minutes == 59 and 50 <= seconds <= 58:
-            if not plc.flag:
-                # with self.lock:
-                if plc.clStartIDLE is not None:
-                    idle_time = (current_time - plc.clStartIDLE).total_seconds()
-                    plc.clConnect= 0
-                    if idle_time > 1:
-                        print(f"Thời gian {current_time} máy {plc.clNameMachine} IDLE lúc 59:59s : {idle_time:.0f}s")
-                        Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} IDLE lúc 59:59s : {idle_time:.0f}s')
-                        self.update_buffer_list(plc.clNameMachine,self.Config['factory'],self.Config['line'],plc.clNameMachine,"standby_time",idle_time,current_time)
-                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
-                        print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
-                        self.buffers[plc.clNameMachine].clear()
-                        plc.clStartIDLE = current_time
+        try:
+            if minutes == 59 and 50 <= seconds <= 58:
+                if not plc.flag:
+                    # with self.lock:
+                    if plc.clStartIDLE is not None:
+                        idle_time = (current_time - plc.clStartIDLE).total_seconds()
+                        plc.clConnect= 0
+                        if idle_time > 1:
+                            print(f"Thời gian {current_time} máy {plc.clNameMachine} IDLE lúc 59:59s : {idle_time:.0f}s")
+                            Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} IDLE lúc 59:59s : {idle_time:.0f}s')
+                            self.update_buffer_list(plc.clNameMachine,self.Config['factory'],self.Config['line'],plc.clNameMachine,"standby_time",idle_time,current_time)
+                            self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                            print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                            self.buffers[plc.clNameMachine].clear()
+                            plc.clStartIDLE = current_time
 
-                if plc.clStartStopTime1 is not None:
-                    timeerror = (current_time - plc.clStartStopTime1).total_seconds()
-                    plc.clConnect= 0
-                    if timeerror > 1:
-                        print(f"Thời gian {current_time} máy {plc.clNameMachine} ERROR lúc 59:59s : {timeerror:.0f}s")
-                        Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} ERROR lúc 59:59s : {timeerror:.0f}s')
-                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"error_time",timeerror,current_time)
-                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
-                        print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
-                        self.buffers[plc.clNameMachine].clear()
-                        plc.clStartStopTime1 = current_time
+                    if plc.clStartStopTime1 is not None:
+                        timeerror = (current_time - plc.clStartStopTime1).total_seconds()
+                        plc.clConnect= 0
+                        if timeerror > 1:
+                            print(f"Thời gian {current_time} máy {plc.clNameMachine} ERROR lúc 59:59s : {timeerror:.0f}s")
+                            Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} ERROR lúc 59:59s : {timeerror:.0f}s')
+                            self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"error_time",timeerror,current_time)
+                            self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                            print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                            self.buffers[plc.clNameMachine].clear()
+                            plc.clStartStopTime1 = current_time
 
-                if plc.clStartStopTime is not None:
-                    time_stop = (current_time - plc.clStartStopTime).total_seconds()
-                    plc.clConnect= 0
-                    if time_stop > 1:
-                        print(f"Thời gian {current_time} máy {plc.clNameMachine} STOP lúc 59:59s : {time_stop:.0f}s")
-                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"stop_time",time_stop,current_time)
-                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
-                        print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
-                        self.buffers[plc.clNameMachine].clear()
-                        plc.clStartStopTime = current_time
+                    if plc.clStartStopTime is not None:
+                        time_stop = (current_time - plc.clStartStopTime).total_seconds()
+                        plc.clConnect= 0
+                        if time_stop > 1:
+                            print(f"Thời gian {current_time} máy {plc.clNameMachine} STOP lúc 59:59s : {time_stop:.0f}s")
+                            self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"stop_time",time_stop,current_time)
+                            self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                            print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                            self.buffers[plc.clNameMachine].clear()
+                            plc.clStartStopTime = current_time
 
-                if plc.clStartRunTime is not None:
-                    time_run = (current_time - plc.clStartRunTime).total_seconds()
-                    plc.clConnect= 0
-                    if time_run > 1:
-                        print(f"Thời gian {current_time} máy {plc.clNameMachine} RUN lúc 59:59s : {time_run:.0f}s")
-                        Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} RUN lúc 59:59s : {time_run:.0f}s')
-                        self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"run_time",time_run,current_time)
-                        self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
-                        print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
-                        self.buffers[plc.clNameMachine].clear()
-                        plc.clStartRunTime = current_time
-                plc.flag = True
-        else:
-            plc.flag = False
+                    if plc.clStartRunTime is not None:
+                        time_run = (current_time - plc.clStartRunTime).total_seconds()
+                        plc.clConnect= 0
+                        if time_run > 1:
+                            print(f"Thời gian {current_time} máy {plc.clNameMachine} RUN lúc 59:59s : {time_run:.0f}s")
+                            Config.writeLog(f'Thời gian {current_time} máy {plc.clNameMachine} RUN lúc 59:59s : {time_run:.0f}s')
+                            self.update_buffer_list(plc.clNameMachine, self.Config['factory'],self.Config['line'],plc.clNameMachine,"run_time",time_run,current_time)
+                            self.conn.insert_machine_data(self.buffers[plc.clNameMachine], self.Config['UPH'])
+                            print(f'MẶC ĐỊNH 59:59 MÁY {plc.clNameMachine}')
+                            self.buffers[plc.clNameMachine].clear()
+                            plc.clStartRunTime = current_time
+                    plc.flag = True
+            else:
+                plc.flag = False
+        except Exception as ex:
+            print(f"Lỗi khi update data mặc định 59 phút 59 giây của máy {plc.clNameMachine}: {str(ex)} ")
+            Config.writeLog(f"Lỗi khi update data mặc định 59 phút 59 giây của máy {plc.clNameMachine}: {str(ex)} ")
+    
     #xử lý trạng thái IDLE
     def handle_idle_state(self,plc, current_time, word_bit_IDLE, wordunits_errors ):
         try: 
@@ -224,7 +229,6 @@ class MainLogic(QObject):
                     plc.clYellow = '0'
                     plc.clStatus = 'NORMAL'
                     print(f'Máy bắt đầu IDLE {plc.clNameMachine} lúc {plc.clStartIDLE}')
-
                     with self.status_lock:
                         self.status_buffer.append({
                             'factory': self.Config['factory'],
@@ -406,7 +410,6 @@ class MainLogic(QObject):
             listError = []
             if not hasattr(plc, 'clStartErrorTime'):
                 plc.clStartErrorTime = {}
-            
             # Kiểm tra lỗi mới
             has_error = any(value == 1 for value in wordunits_errors)
             if has_error:
@@ -646,7 +649,7 @@ class MainLogic(QObject):
         except Exception as ex:
             print(f'Error handle cycle time: {ex}')
     # Xử lý kết nối lại PLC
-    #Reset trạng thái máy 
+    #Reset trạng thái máy
     def reset_plc_status(self, machine_status):
         machine_status["clStartIDLE"] = None
         machine_status["clStartStopTime"] = None
@@ -753,8 +756,7 @@ class MainLogic(QObject):
                     #         'db_server_name': self.Config['dbName'],
                     #         'current_state': '0'
                     #     })
-                    # self.conn.update_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, Config1['projectName'], machine_status.typeMachine, Config1['UPH'], Config1['ipServer'], Config1['dbName'], '0')
-                    
+                    # self.conn.update_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, Config1['projectName'], machine_status.typeMachine, Config1['UPH'], Config1['ipServer'], Config1['dbName'], '0')                   
                     # self.conn.update_oracle_machine_status(Config1['factory'], Config1['line'], machine_status.clNameMachine, 'PAUSE')
                     new_connection = self.retry_connect_plc(plc)
                     if new_connection is not None:

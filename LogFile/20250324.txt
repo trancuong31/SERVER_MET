@@ -27,3 +27,5 @@ Lỗi kết nối với PLC LB1: [WinError 10054] An existing connection was for
 Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2025-03-24 11:13:24
 Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2025-03-24 11:13:30
 Lỗi kết nối với PLC LB1: [WinError 10053] An established connection was aborted by the software in your host machine      2025-03-24 11:13:40
+Thời gian 2025-03-24 16:59:50 máy LB1 RUN lúc 59:59s : 2134s
+Thời gian 2025-03-24 17:59:50 máy LB1 RUN lúc 59:59s : 3600s

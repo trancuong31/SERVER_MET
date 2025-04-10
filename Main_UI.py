@@ -4,11 +4,13 @@ from GUI import Ui_MainWindow
 from PyQt5.QtCore import QThread
 from PyQt5 import QtWidgets
 from mainLogic import MainLogic
+from connectDB import connectDB
 from PyQt5.QtGui import QIcon
 class WorkerThread(QThread):
     def __init__(self, logic):
         super().__init__()
         self.logic = logic
+        
 
     def run(self):
         self.logic.threadPLC()
@@ -17,6 +19,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.ui = Ui_MainWindow()
+        self.db_connection = connectDB()
         self.ui.setupUi(self)
         self.setWindowIcon(QIcon('logo_met.png'))
         self.ui.setting.clicked.connect(self.ui.opensetting)
@@ -68,6 +71,7 @@ class MainWindow(QMainWindow):
             QMessageBox.No
         )
         if reply == QMessageBox.Yes:
+            self.db_connection.close_connection()
             event.accept() 
         else:
             event.ignore() 
@@ -76,5 +80,6 @@ if __name__ == "__main__":
     window = MainWindow()
     window.setWindowIcon(QIcon('logo_met.png'))
     window.show()
+    
     sys.exit(app.exec_())
                                                                                                                                                                                 

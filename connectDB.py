@@ -14,12 +14,12 @@ class connectDB:
             oracledb.init_oracle_client()  # Kiểm tra nếu có Oracle Client sẵn
             print("Oracle Instant Client is available.")
             connection = oracledb.connect(
-                # user="pthnew",
-                # password="pthnew",
-                # dsn="10.228.114.170:3333/meorcl"
-                user="system",
-                password="123456",
-                dsn="localhost:1521/orcl3"
+                user="pthnew",
+                password="pthnew",
+                dsn="10.228.114.170:3333/meorcl"
+                # user="system",
+                # password="123456",
+                # dsn="localhost:1521/orcl3"
             )
             print('Kết nối thành công SERVER !!')
             return connection
@@ -27,25 +27,31 @@ class connectDB:
             print(f"Lỗi khi kết nối tới cơ sở dữ liệu: {e}")
             return None
     
-    def select(self, connection, query, parameters=None):
-        cursor = connection.cursor()
-        try:
-            if parameters:
-                cursor.execute(query, parameters)
-            else:
-                cursor.execute(query)
-            result = cursor.fetchall()  
-            return result
-        except oracledb.DatabaseError as e:
-            print(f"Lỗi khi truy vấn dữ liệu: {e}")
-            return None
-        finally:
-            cursor.close()
+    def close_connection(self):
+        with connectDB.lock_DB:
+            if self.connection:
+                self.connection.close()
+                self.connection = None
+                print("Đã đóng kết nối cơ sở dữ liệu.")
+    # def select(self, connection, query, parameters=None):
+    #     cursor = connection.cursor()
+    #     try:
+    #         if parameters:
+    #             cursor.execute(query, parameters)
+    #         else:
+    #             cursor.execute(query)
+    #         result = cursor.fetchall()
+    #         return result
+    #     except oracledb.DatabaseError as e:
+    #         print(f"Lỗi khi truy vấn dữ liệu: {e}")
+    #         return None
+    #     finally:
+    #         cursor.close()
     # Hàm thực thi cácc câu lệnh SQL (INSERT, UPDATE, DELETE)
     def execute_query(self,connection, query, parameters=None):
         cursor = connection.cursor()
         try:
-            if parameters:
+            if parameters:                
                 cursor.execute(query, parameters)
             else:
                 cursor.execute(query)
@@ -57,9 +63,30 @@ class connectDB:
         finally:
             cursor.close()
 
+    def is_connection_active(self):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute("SELECT 1 FROM dual")
+            cursor.close()
+            return True
+        except oracledb.DatabaseError:
+            return False
+
+    def check_and_reconnect(self):
+        with connectDB.lock_DB:
+            if self.connection is None or not self.is_connection_active():
+                print("Database connection is lost or not established. Reconnecting...")
+                self.connection = self.create_connection()
+                if self.connection is None:
+                    print("Unable to reconnect to the database.")
+                    return False
+        return True
+
     def insert_machine_data(self, buffer, uph):
         work_date = datetime.datetime.now().strftime("%Y-%m-%d %H")
         try:
+            if not self.check_and_reconnect():
+                return False
             # Chuẩn bị dữ liệu cho batch
             batch_data = []
             for key, values in buffer.items():
@@ -126,7 +153,7 @@ class connectDB:
                 try:
                     cursor.executemany(merge_query, batch_data)
                     self.connection.commit()
-                    print(f"Batch update thành công {len(batch_data)} bản ghi lên bảng CNT_MACHINE_SUMMARY!")
+                    print(f" Batch update thành công {len(batch_data)} bản ghi lên bảng CNT_MACHINE_SUMMARY!")
                     return True
                 except oracledb.DatabaseError as e:
                     print(f"Lỗi khi thực thi batch: {e}")
@@ -142,6 +169,8 @@ class connectDB:
   
     def update_status(self, status_list):
         try:
+            if not self.check_and_reconnect():
+                return False
             batch_data = [
                 {
                     'machine_no': f"{s['factory']}_{s['line']}_{s['machine_code']}",
@@ -176,7 +205,7 @@ class connectDB:
                 try:
                     cursor.executemany(merge_query, batch_data)
                     self.connection.commit()
-                    print(f"Batch updated {len(batch_data)} machine statuses in CNT_MACHINE_INFO!")
+                    print(f" Batch updated {len(batch_data)} machine statuses in CNT_MACHINE_INFO!")
                     # Config.writeLog(f"Batch updated {len(batch_data)} machine statuses in CNT_MACHINE_INFO")
                     return True
                 except oracledb.DatabaseError as e:
@@ -193,6 +222,8 @@ class connectDB:
 
     def cnt_process_error_records(self, error_records):
         try:
+            if not self.check_and_reconnect():
+                return False
             if not error_records:
                 print("No error records to process.")
                 return True
@@ -206,7 +237,6 @@ class connectDB:
                 end_time = record['end_time'].strftime('%Y-%m-%d %H:%M:%S') if record.get('end_time') else None
                 
                 if end_time is None:
-                    # Chỉ lấy các trường cần cho INSERT
                     insert_data = {
                         'machine_no': machine_no,
                         'project_name': record['project_name'],
@@ -217,7 +247,6 @@ class connectDB:
                     }
                     insert_records.append(insert_data)
                 else:
-                    # Chỉ lấy các trường cần cho UPDATE
                     update_data = {
                         'machine_no': machine_no,
                         'error_code': record['error_code'],
@@ -238,9 +267,8 @@ class connectDB:
                                 TO_DATE(:start_time, 'YYYY-MM-DD HH24:MI:SS')
                             )
                         """
-                        # print(f"Insert records: {insert_records}") 
                         cursor.executemany(insert_query, insert_records)
-                        print(f"Batch inserted {len(insert_records)} new error records.")
+                        print(f" Batch inserted {len(insert_records)} new error records.")
 
                     # Batch UPDATE
                     if update_records:
@@ -251,12 +279,10 @@ class connectDB:
                             AND ERROR_CODE = :error_code
                             AND END_TIME IS NULL
                         """
-                        # print(f"Update records: {update_records}") 
                         cursor.executemany(update_query, update_records)
-                        print(f"Batch updated {len(update_records)} error records with END_TIME.")
+                        print(f" Batch updated {len(update_records)} error records with END_TIME.")
 
                     self.connection.commit()
-                    # Config.writeLog(f"Batch processed {len(insert_records)} inserts and {len(update_records)} updates in CNT_MACHINE_ERROR_RECORD")
                     return True
 
                 except oracledb.DatabaseError as e:
@@ -291,33 +317,4 @@ class connectDB:
                     print(f"Lỗi khi xóa lỗi: {str(e)}")
                     return False
 
-
-    # def cnt_update_error_on1(self, error_list):
-    #     with connectDB.lock_DB:
-    #         try:
-    #             query = """
-    #                 DELETE FROM CNT_MACHINE_ERROR_RECORD
-    #                 WHERE MACHINE_NO = :machine_no
-    #                 AND ERROR_CODE = :error_code
-    #                 AND END_TIME IS NULL
-    #             """
-    #             data = [
-    #                 {
-    #                     "machine_no": f"{factory}_{line}_{machine_code}",
-    #                     "error_code": error_code
-    #                 }
-    #                 for factory, line, machine_code, error_code in error_list
-    #             ]
-    #             try:
-    #                 self.connection.cursor().executemany(query, data)
-    #                 self.connection.commit()
-    #                 print(f"Đã xóa {len(data)} lỗi thành công!")
-    #                 return True
-    #             except Exception as ex:
-    #                 print(f"Error executing batch delete: {str(ex)}")
-    #                 self.connection.rollback()
-    #                 return False
-    #         except Exception as e:
-    #             print(f"Lỗi khi xóa lỗi: {str(e)}")
-    #             return False
 
